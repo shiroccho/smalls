@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalMemo</title>
+    <!-- Skeleton CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+    <style>
+        body {
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+        .memo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .memo-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .memo-item:last-child {
+            border-bottom: none;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="memo-container">
+            <h1>Local Memo</h1>
+            
+            <div class="form-group">
+                <label for="memo-title">Title</label>
+                <input type="text" id="memo-title" placeholder="Memo Title">
+            </div>
+
+            <div class="form-group">
+                <label for="memo-content">Content</label>
+                <textarea id="memo-content" placeholder="Memo Content"></textarea>
+            </div>
+
+            <button onclick="addMemo()">Add Memo</button>
+            
+            <div id="memo-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // ローカルストレージからメモを読み込む
+        let memos = JSON.parse(localStorage.getItem('memos')) || [];
+
+        // 初期表示
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMemos();
+        });
+
+        // メモ追加関数
+        function addMemo() {
+            const title = document.getElementById('memo-title').value;
+            const content = document.getElementById('memo-content').value;
+            
+            if (!title && !content) return;
+
+            const newMemo = {
+                id: Date.now(),
+                title: title,
+                content: content,
+                createdAt: new Date().toLocaleString()
+            };
+
+            memos.push(newMemo);
+            saveMemos();
+            renderMemos();
+            
+            // 入力フィールドをクリア
+            document.getElementById('memo-title').value = '';
+            document.getElementById('memo-content').value = '';
+        }
+
+        // メモ削除関数
+        function deleteMemo(id) {
+            memos = memos.filter(memo => memo.id !== id);
+            saveMemos();
+            renderMemos();
+        }
+
+        // メモを保存
+        function saveMemos() {
+            localStorage.setItem('memos', JSON.stringify(memos));
+        }
+
+        // メモを表示
+        function renderMemos() {
+            const memoList = document.getElementById('memo-list');
+            memoList.innerHTML = '';
+
+            memos.forEach(memo => {
+                const memoElement = document.createElement('div');
+                memoElement.className = 'memo-item';
+                memoElement.innerHTML = `
+                    <h3>${memo.title || '(Untitled)'}</h3>
+                    <p>${memo.content}</p>
+                    <small>${memo.createdAt}</small>
+                    <button class="delete-btn" onclick="deleteMemo(${memo.id})">×</button>
+                `;
+                memoList.appendChild(memoElement);
+            });
+        }
+    </script>
+</body>
+</html>
