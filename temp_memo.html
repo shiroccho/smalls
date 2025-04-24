@@ -41,6 +41,15 @@
             height: 100px;
             resize: vertical;
         }
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+        .reset-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -58,7 +67,10 @@
                 <textarea id="memo-content" placeholder="Memo Content"></textarea>
             </div>
 
-            <button onclick="addMemo()">Add Memo</button>
+            <div class="button-container">
+                <button class="button-primary" onclick="addMemo()">Add Memo</button>
+                <button class="reset-btn" onclick="resetMemos()">初期化</button>
+            </div>
             
             <div id="memo-list"></div>
         </div>
@@ -101,6 +113,15 @@
             memos = memos.filter(memo => memo.id !== id);
             saveMemos();
             renderMemos();
+        }
+        
+        // メモとローカルストレージを初期化する関数
+        function resetMemos() {
+            if (confirm('本当にすべてのメモを削除しますか？')) {
+                memos = [];
+                localStorage.removeItem('memos');
+                renderMemos();
+            }
         }
 
         // メモを保存
