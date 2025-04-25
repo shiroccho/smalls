@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript パックマン</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #111;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+        }
+        canvas {
+            border: 2px solid blue;
+            background-color: black;
+        }
+        .score-container {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .controls {
+            color: white;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="score-container">スコア: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="448" height="496"></canvas>
+    <div class="controls">
+        矢印キーでパックマンを操作します<br>
+        ESCで再スタート
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        
+        // ゲーム設定
+        const CELL_SIZE = 16;
+        const COLS = 28;
+        const ROWS = 31;
+        const PACMAN_SPEED = 2;
+        const GHOST_SPEED = 1.5;
+        
+        // 方向定数
+        const UP = 0;
+        const RIGHT = 1;
+        const DOWN = 2;
+        const LEFT = 3;
+        
+        // ゲーム状態
+        let score = 0;
+        let lives = 3;
+        let gameOver = false;
+        let gameWon = false;
+        
+        // パックマンの状態
+        let pacman = {
+            x: 14 * CELL_SIZE,
+            y: 23 * CELL_SIZE,
+            radius: CELL_SIZE / 2,
+            direction: LEFT,
+            nextDirection: LEFT,
+            angle: 0.2,
+            mouthOpen: true,
+            mouthInterval: null,
+        };
+        
+        // ゴーストの状態
+        const ghostColors = ['#FF0000', '#FFB8FF', '#00FFFF', '#FFB852'];
+        const ghostNames = ['Blinky', 'Pinky', 'Inky', 'Clyde'];
+        const ghostStartPositions = [
+            { x: 13 * CELL_SIZE, y: 14 * CELL_SIZE },
+            { x: 14 * CELL_SIZE, y: 14 * CELL_SIZE },
+            { x: 15 * CELL_SIZE, y: 14 * CELL_SIZE },
+            { x: 14 * CELL_SIZE, y: 15 * CELL_SIZE }
+        ];
+        
+        let ghosts = [];
+        
+        // 迷路データ
+        // 0: 何もなし, 1: 壁, 2: ドット, 3: パワーペレット, 4: ゴーストハウスの壁
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+            [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+            [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
+            [0,0,0,0,0,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,0,0,0,0,0],
+            [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+            [0,0,0,0,0,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,0,0,0,0,0],
+            [1,1,1,1,1,1,2,1,1,0,1,0,0,0,0,0,0,1,0,1,1,2,1,1,1,1,1,1],
+            [0,0,0,0,0,0,2,0,0,0,1,0,0,0,0,0,0,1,0,0,0,2,0,0,0,0,0,0],
+            [1,1,1,1,1,1,2,1,1,0,1,0,0,0,0,0,0,1,0,1,1,2,1,1,1,1,1,1],
+            [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+            [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+            [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+            [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+            [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+            [1,3,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,3,1],
+            [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+            [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+            [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+            [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+            [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+            [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        
+        // ドットとパワーペレットのカウント
+        let totalDots = 0;
+        let collectedDots = 0;
+        
+        // ドットのカウント
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                if (maze[y][x] === 2 || maze[y][x] === 3) {
+                    totalDots++;
+                }
+            }
+        }
+        
+        // ゲームの初期化
+        function initGame() {
+            // パックマンの初期化
+            pacman = {
+                x: 14 * CELL_SIZE,
+                y: 23 * CELL_SIZE,
+                radius: CELL_SIZE / 2,
+                direction: LEFT,
+                nextDirection: LEFT,
+                angle: 0.2,
+                mouthOpen: true,
+                mouthInterval: null,
+            };
+            
+            // ゴーストの初期化
+            ghosts = [];
+            for (let i = 0; i < 4; i++) {
+                ghosts.push({
+                    x: ghostStartPositions[i].x,
+                    y: ghostStartPositions[i].y,
+                    direction: Math.floor(Math.random() * 4),
+                    nextDirection: Math.floor(Math.random() * 4),
+                    color: ghostColors[i],
+                    name: ghostNames[i],
+                    scared: false
+                });
+            }
+            
+            // スコアのリセット
+            score = 0;
+            scoreElement.textContent = score;
+            
+            // ゲーム状態のリセット
+            gameOver = false;
+            gameWon = false;
+            collectedDots = 0;
+            
+            // 口の開閉アニメーション
+            clearInterval(pacman.mouthInterval);
+            pacman.mouthInterval = setInterval(() => {
+                pacman.mouthOpen = !pacman.mouthOpen;
+            }, 100);
+            
+            // キーボード入力のリスナー設定
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // ゲームループの開始
+            gameLoop();
+        }
+        
+        // キーボード入力の処理
+        function handleKeyPress(e) {
+            switch (e.keyCode) {
+                case 38: // 上
+                    pacman.nextDirection = UP;
+                    break;
+                case 39: // 右
+                    pacman.nextDirection = RIGHT;
+                    break;
+                case 40: // 下
+                    pacman.nextDirection = DOWN;
+                    break;
+                case 37: // 左
+                    pacman.nextDirection = LEFT;
+                    break;
+                case 27: // ESC
+                    initGame();
+                    break;
+            }
+        }
+        
+        // 壁の衝突チェック
+        function checkWallCollision(x, y) {
+            const gridX = Math.floor(x / CELL_SIZE);
+            const gridY = Math.floor(y / CELL_SIZE);
+            
+            // 迷路の範囲外チェック
+            if (gridX < 0 || gridX >= COLS || gridY < 0 || gridY >= ROWS) {
+                return true;
+            }
+            
+            // 壁のチェック
+            return maze[gridY][gridX] === 1 || maze[gridY][gridX] === 4;
+        }
+        
+        // パックマンの移動
+        function movePacman() {
+            // 次の方向に移動できるか確認
+            let nextX = pacman.x;
+            let nextY = pacman.y;
+            
+            switch (pacman.nextDirection) {
+                case UP:
+                    nextY -= PACMAN_SPEED;
+                    break;
+                case RIGHT:
+                    nextX += PACMAN_SPEED;
+                    break;
+                case DOWN:
+                    nextY += PACMAN_SPEED;
+                    break;
+                case LEFT:
+                    nextX -= PACMAN_SPEED;
+                    break;
+            }
+            
+            // 次の方向に移動できる場合は方向を変更
+            if (!checkWallCollision(nextX, nextY)) {
+                pacman.direction = pacman.nextDirection;
+            }
+            
+            // 現在の方向に移動
+            nextX = pacman.x;
+            nextY = pacman.y;
+            
+            switch (pacman.direction) {
+                case UP:
+                    nextY -= PACMAN_SPEED;
+                    break;
+                case RIGHT:
+                    nextX += PACMAN_SPEED;
+                    break;
+                case DOWN:
+                    nextY += PACMAN_SPEED;
+                    break;
+                case LEFT:
+                    nextX -= PACMAN_SPEED;
+                    break;
+            }
+            
+            // 壁との衝突がなければ移動
+            if (!checkWallCollision(nextX, nextY)) {
+                pacman.x = nextX;
+                pacman.y = nextY;
+            }
+            
+            // トンネルのワープ処理
+            if (pacman.x < 0) {
+                pacman.x = canvas.width;
+            } else if (pacman.x > canvas.width) {
+                pacman.x = 0;
+            }
+            
+            // ドットの収集チェック
+            const gridX = Math.floor(pacman.x / CELL_SIZE);
+            const gridY = Math.floor(pacman.y / CELL_SIZE);
+            
+            if (gridX >= 0 && gridX < COLS && gridY >= 0 && gridY < ROWS) {
+                if (maze[gridY][gridX] === 2) { // 通常ドット
+                    maze[gridY][gridX] = 0;
+                    score += 10;
+                    collectedDots++;
+                    scoreElement.textContent = score;
+                } else if (maze[gridY][gridX] === 3) { // パワーペレット
+                    maze[gridY][gridX] = 0;
+                    score += 50;
+                    collectedDots++;
+                    scoreElement.textContent = score;
+                    
+                    // ゴーストを怖がらせる
+                    for (let ghost of ghosts) {
+                        ghost.scared = true;
+                    }
+                    
+                    // 10秒後に戻す
+                    setTimeout(() => {
+                        for (let ghost of ghosts) {
+                            ghost.scared = false;
+                        }
+                    }, 10000);
+                }
+            }
+            
+            // 全てのドットを集めたらゲームクリア
+            if (collectedDots === totalDots) {
+                gameWon = true;
+            }
+        }
+        
+        // ゴーストの移動
+        function moveGhosts() {
+            for (let ghost of ghosts) {
+                // 次の方向の決定（ランダム）
+                if (Math.random() < 0.05) {
+                    ghost.nextDirection = Math.floor(Math.random() * 4);
+                }
+                
+                // 次の位置を計算
+                let nextX = ghost.x;
+                let nextY = ghost.y;
+                let speed = ghost.scared ? GHOST_SPEED / 2 : GHOST_SPEED;
+                
+                switch (ghost.nextDirection) {
+                    case UP:
+                        nextY -= speed;
+                        break;
+                    case RIGHT:
+                        nextX += speed;
+                        break;
+                    case DOWN:
+                        nextY += speed;
+                        break;
+                    case LEFT:
+                        nextX -= speed;
+                        break;
+                }
+                
+                // 次の方向に移動できるか確認
+                if (!checkWallCollision(nextX, nextY)) {
+                    ghost.direction = ghost.nextDirection;
+                    ghost.x = nextX;
+                    ghost.y = nextY;
+                } else {
+                    // 移動できない場合はランダムに方向を変える
+                    ghost.nextDirection = Math.floor(Math.random() * 4);
+                }
+                
+                // トンネルのワープ処理
+                if (ghost.x < 0) {
+                    ghost.x = canvas.width;
+                } else if (ghost.x > canvas.width) {
+                    ghost.x = 0;
+                }
+                
+                // パックマンとゴーストの衝突チェック
+                const distance = Math.sqrt(
+                    Math.pow(ghost.x - pacman.x, 2) + 
+                    Math.pow(ghost.y - pacman.y, 2)
+                );
+                
+                if (distance < CELL_SIZE) {
+                    if (ghost.scared) {
+                        // ゴーストを初期位置に戻す
+                        const index = ghosts.indexOf(ghost);
+                        ghost.x = ghostStartPositions[index].x;
+                        ghost.y = ghostStartPositions[index].y;
+                        ghost.scared = false;
+                        score += 200;
+                        scoreElement.textContent = score;
+                    } else {
+                        // ゲームオーバー
+                        gameOver = true;
+                    }
+                }
+            }
+        }
+        
+        // ゲームの描画
+        function draw() {
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 迷路の描画
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (maze[y][x] === 1) {
+                        // 壁
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    } else if (maze[y][x] === 2) {
+                        // ドット
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(
+                            x * CELL_SIZE + CELL_SIZE / 2,
+                            y * CELL_SIZE + CELL_SIZE / 2,
+                            CELL_SIZE / 10,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    } else if (maze[y][x] === 3) {
+                        // パワーペレット
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(
+                            x * CELL_SIZE + CELL_SIZE / 2,
+                            y * CELL_SIZE + CELL_SIZE / 2,
+                            CELL_SIZE / 3,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    } else if (maze[y][x] === 4) {
+                        // ゴーストハウスの壁
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+            
+            // パックマンの描画
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            
+            let startAngle, endAngle;
+            
+            if (pacman.mouthOpen) {
+                switch (pacman.direction) {
+                    case UP:
+                        startAngle = Math.PI * (1.5 + pacman.angle);
+                        endAngle = Math.PI * (3.5 - pacman.angle);
+                        break;
+                    case RIGHT:
+                        startAngle = Math.PI * pacman.angle;
+                        endAngle = Math.PI * (2 - pacman.angle);
+                        break;
+                    case DOWN:
+                        startAngle = Math.PI * (0.5 + pacman.angle);
+                        endAngle = Math.PI * (2.5 - pacman.angle);
+                        break;
+                    case LEFT:
+                        startAngle = Math.PI * (1 + pacman.angle);
+                        endAngle = Math.PI * (3 - pacman.angle);
+                        break;
+                }
+            } else {
+                startAngle = 0;
+                endAngle = Math.PI * 2;
+            }
+            
+            ctx.arc(
+                pacman.x + pacman.radius,
+                pacman.y + pacman.radius,
+                pacman.radius,
+                startAngle,
+                endAngle
+            );
+            
+            if (pacman.mouthOpen) {
+                ctx.lineTo(pacman.x + pacman.radius, pacman.y + pacman.radius);
+            }
+            
+            ctx.fill();
+            
+            // ゴーストの描画
+            for (let ghost of ghosts) {
+                // ゴーストの本体
+                ctx.fillStyle = ghost.scared ? 'blue' : ghost.color;
+                ctx.beginPath();
+                
+                // 頭部（円）
+                ctx.arc(
+                    ghost.x + CELL_SIZE / 2,
+                    ghost.y + CELL_SIZE / 2 - 2,
+                    CELL_SIZE / 2,
+                    Math.PI,
+                    0,
+                    false
+                );
+                
+                // 足部（ジグザグ）
+                ctx.lineTo(ghost.x + CELL_SIZE, ghost.y + CELL_SIZE);
+                ctx.lineTo(ghost.x + CELL_SIZE * 3/4, ghost.y + CELL_SIZE * 3/4);
+                ctx.lineTo(ghost.x + CELL_SIZE / 2, ghost.y + CELL_SIZE);
+                ctx.lineTo(ghost.x + CELL_SIZE / 4, ghost.y + CELL_SIZE * 3/4);
+                ctx.lineTo(ghost.x, ghost.y + CELL_SIZE);
+                ctx.lineTo(ghost.x, ghost.y + CELL_SIZE / 2 - 2);
+                
+                ctx.fill();
+                
+                // 目
+                if (!ghost.scared) {
+                    // 白い部分
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(
+                        ghost.x + CELL_SIZE / 3,
+                        ghost.y + CELL_SIZE / 3,
+                        CELL_SIZE / 6,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.arc(
+                        ghost.x + CELL_SIZE * 2/3,
+                        ghost.y + CELL_SIZE / 3,
+                        CELL_SIZE / 6,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    
+                    // 黒い部分（瞳）
+                    ctx.fillStyle = 'black';
+                    
+                    let pupilOffsetX = 0;
+                    let pupilOffsetY = 0;
+                    
+                    switch (ghost.direction) {
+                        case UP:
+                            pupilOffsetY = -2;
+                            break;
+                        case RIGHT:
+                            pupilOffsetX = 2;
+                            break;
+                        case DOWN:
+                            pupilOffsetY = 2;
+                            break;
+                        case LEFT:
+                            pupilOffsetX = -2;
+                            break;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        ghost.x + CELL_SIZE / 3 + pupilOffsetX,
+                        ghost.y + CELL_SIZE / 3 + pupilOffsetY,
+                        CELL_SIZE / 12,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.arc(
+                        ghost.x + CELL_SIZE * 2/3 + pupilOffsetX,
+                        ghost.y + CELL_SIZE / 3 + pupilOffsetY,
+                        CELL_SIZE / 12,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                } else {
+                    // 怖がっているときの目
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    
+                    // 目（x）
+                    // 左目
+                    ctx.moveTo(ghost.x + CELL_SIZE / 4, ghost.y + CELL_SIZE / 4);
+                    ctx.lineTo(ghost.x + CELL_SIZE * 3/8, ghost.y + CELL_SIZE * 3/8);
+                    ctx.moveTo(ghost.x + CELL_SIZE / 4, ghost.y + CELL_SIZE * 3/8);
+                    ctx.lineTo(ghost.x + CELL_SIZE * 3/8, ghost.y + CELL_SIZE / 4);
+                    
+                    // 右目
+                    ctx.moveTo(ghost.x + CELL_SIZE * 5/8, ghost.y + CELL_SIZE / 4);
+                    ctx.lineTo(ghost.x + CELL_SIZE * 3/4, ghost.y + CELL_SIZE * 3/8);
+                    ctx.moveTo(ghost.x + CELL_SIZE * 5/8, ghost.y + CELL_SIZE * 3/8);
+                    ctx.lineTo(ghost.x + CELL_SIZE * 3/4, ghost.y + CELL_SIZE / 4);
+                    
+                    ctx.stroke();
+                    
+                    // 口
+                    ctx.beginPath();
+                    ctx.arc(
+                        ghost.x + CELL_SIZE / 2,
+                        ghost.y + CELL_SIZE * 2/3,
+                        CELL_SIZE / 6,
+                        0,
+                        Math.PI,
+                        false
+                    );
+                    ctx.stroke();
+                }
+            }
+            
+            // ゲームオーバー表示
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = 'red';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                ctx.fillText('ESCキーで再スタート', canvas.width / 2, canvas.height / 2 + 40);
+            }
+            
+            // ゲームクリア表示
+            if (gameWon) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = 'yellow';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('YOU WIN!', canvas.width / 2, canvas.height / 2);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                ctx.fillText('スコア: ' + score, canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('ESCキーで再スタート', canvas.width / 2, canvas.height / 2 + 80);
+            }
+        }
+        
+        // ゲームループ
+        function gameLoop() {
+            if (!gameOver && !gameWon) {
+                movePacman();
+                moveGhosts();
+            }
+            
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ゲーム開始
+        initGame();
+    </script>
+</body>
+</html>
