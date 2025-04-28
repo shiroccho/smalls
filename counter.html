@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ストップウォッチ</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      transition: background-color 0.5s ease;
+      user-select: none;
+      overflow: hidden;
+      background-color: white;
+    }
+    .container {
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .time {
+      font-size: 15vw;
+      margin: 0;
+      line-height: 1;
+      font-weight: bold;
+    }
+    .controls {
+      position: fixed;
+      bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 100;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .settings {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    label {
+      font-size: 0.85rem;
+      margin-bottom: 3px;
+    }
+    input {
+      width: 80px;
+      padding: 5px;
+      text-align: center;
+      border-radius: 3px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .stop {
+      background-color: #f44336;
+    }
+    .stop:hover {
+      background-color: #d32f2f;
+    }
+    .settings-btn {
+      background-color: #2196F3;
+      font-size: 0.9rem;
+      padding: 5px 10px;
+    }
+    .settings-btn:hover {
+      background-color: #0b7dda;
+    }
+    .instructions {
+      position: fixed;
+      top: 20px;
+      color: #666;
+      text-align: center;
+      width: 100%;
+    }
+  </style>
+</head>
+<body id="app">
+  <div class="container">
+    <div class="time" id="timer">00:00</div>
+  </div>
+  
+  <div class="controls">
+    <div class="settings" id="settingsPanel">
+      <div class="setting-group">
+        <label for="yellowTime">黄色に変わる時間 (秒)</label>
+        <input type="number" id="yellowTime" min="1" value="90">
+      </div>
+      <div class="setting-group">
+        <label for="redTime">赤色に変わる時間 (秒)</label>
+        <input type="number" id="redTime" min="1" value="120">
+      </div>
+      <button class="settings-btn" id="saveSettings">設定保存</button>
+    </div>
+    <div class="buttons">
+      <button id="startStopBtn">再開</button>
+      <button class="settings-btn" id="toggleSettings">設定</button>
+    </div>
+  </div>
+  
+  <div class="instructions">
+    <p>画面をタッチするとリセットして再開します</p>
+    <p id="timeInfo">1分30秒で黄色、2分で赤色に変わります</p>
+  </div>
+
+  <audio id="beepSound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" type="audio/wav">
+  </audio>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const timerDisplay = document.getElementById('timer');
+      const startStopBtn = document.getElementById('startStopBtn');
+      const appBody = document.getElementById('app');
+      const yellowTimeInput = document.getElementById('yellowTime');
+      const redTimeInput = document.getElementById('redTime');
+      const saveSettingsBtn = document.getElementById('saveSettings');
+      const toggleSettingsBtn = document.getElementById('toggleSettings');
+      const settingsPanel = document.getElementById('settingsPanel');
+      const timeInfo = document.getElementById('timeInfo');
+      const beepSound = document.getElementById('beepSound');
+      
+      let startTime;
+      let elapsedTime = 0;
+      let timerInterval;
+      let isRunning = false;
+      let yellowTime = 90; // 初期値: 1分30秒
+      let redTime = 120;   // 初期値: 2分
+      let lastColorState = 'white'; // 色の状態を追跡
+      
+      // クッキーに保存された設定を読み込む
+      loadSettings();
+      
+      // 初期状態で設定パネルを非表示
+      settingsPanel.style.display = 'none';
+      
+      // ビープ音を作成
+      setupBeepSound();
+      
+      // 時間をフォーマットする関数
+      function formatTime(timeInSeconds) {
+        const minutes = Math.floor(timeInSeconds / 60);
+        const seconds = Math.floor(timeInSeconds % 60);
+        
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // タイマーを更新する関数
+      function updateTimer() {
+        const currentTime = Date.now();
+        elapsedTime = (currentTime - startTime) / 1000;
+        timerDisplay.textContent = formatTime(elapsedTime);
+        
+        // 背景色を変更
+        let currentColorState = 'white';
+        
+        if (elapsedTime >= redTime) {
+          document.body.style.backgroundColor = '#ff0000'; // 赤色
+          currentColorState = 'red';
+        } else if (elapsedTime >= yellowTime) {
+          document.body.style.backgroundColor = '#ffff00'; // 黄色
+          currentColorState = 'yellow';
+        } else {
+          document.body.style.backgroundColor = 'white'; // 白色
+          currentColorState = 'white';
+        }
+        
+        // 黄色から赤色に変わるときにビープ音を鳴らす
+        if (lastColorState === 'yellow' && currentColorState === 'red') {
+          playBeep();
+        }
+        
+        lastColorState = currentColorState;
+      }
+      
+      // スタート/ストップボタンのイベント
+      startStopBtn.addEventListener('click', function() {
+        if (isRunning) {
+          // タイマーを停止
+          clearInterval(timerInterval);
+          startStopBtn.textContent = '再開';
+          startStopBtn.classList.remove('stop');
+          isRunning = false;
+        } else {
+          // タイマーを開始
+          startTime = Date.now() - elapsedTime * 1000;
+          timerInterval = setInterval(updateTimer, 100);
+          startStopBtn.textContent = 'ストップ';
+          startStopBtn.classList.add('stop');
+          isRunning = true;
+        }
+      });
+      
+      // 画面タッチでリセット再開
+      document.body.addEventListener('click', function(event) {
+        // コントロール関連のクリックは除外
+        if (event.target.closest('.controls')) {
+          return;
+        }
+        
+        // タイマーをリセットして再開
+        clearInterval(timerInterval);
+        elapsedTime = 0;
+        timerDisplay.textContent = '00:00';
+        document.body.style.backgroundColor = 'white'; // 初期背景色を白に設定
+        lastColorState = 'white';
+        
+        // すぐに再開
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 100);
+        startStopBtn.textContent = 'ストップ';
+        startStopBtn.classList.add('stop');
+        isRunning = true;
+      });
+      
+      // 設定パネルの表示/非表示を切り替える
+      toggleSettingsBtn.addEventListener('click', function() {
+        if (settingsPanel.style.display === 'none') {
+          settingsPanel.style.display = 'flex';
+        } else {
+          settingsPanel.style.display = 'none';
+        }
+      });
+      
+      // 設定を保存する
+      saveSettingsBtn.addEventListener('click', function() {
+        const newYellowTime = parseInt(yellowTimeInput.value);
+        const newRedTime = parseInt(redTimeInput.value);
+        
+        // バリデーション
+        if (newYellowTime < 1 || newRedTime < 1) {
+          alert('設定時間は1秒以上にしてください');
+          return;
+        }
+        
+        if (newYellowTime >= newRedTime) {
+          alert('黄色の時間は赤色の時間より小さくしてください');
+          return;
+        }
+        
+        // 設定を適用
+        yellowTime = newYellowTime;
+        redTime = newRedTime;
+        
+        // クッキーに保存
+        setCookie('yellowTime', yellowTime, 365);
+        setCookie('redTime', redTime, 365);
+        
+        // 情報テキストを更新
+        updateTimeInfo();
+        
+        // 設定パネルを閉じる
+        settingsPanel.style.display = 'none';
+        
+        alert('設定を保存しました');
+      });
+      
+      // クッキーを設定する関数
+      function setCookie(name, value, days) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/';
+      }
+      
+      // クッキーを取得する関数
+      function getCookie(name) {
+        const nameEQ = name + '=';
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+          if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+      }
+      
+      // 設定を読み込む関数
+      function loadSettings() {
+        const savedYellowTime = getCookie('yellowTime');
+        const savedRedTime = getCookie('redTime');
+        
+        if (savedYellowTime !== null) {
+          yellowTime = parseInt(savedYellowTime);
+          yellowTimeInput.value = yellowTime;
+        }
+        
+        if (savedRedTime !== null) {
+          redTime = parseInt(savedRedTime);
+          redTimeInput.value = redTime;
+        }
+        
+        updateTimeInfo();
+      }
+      
+      // 情報テキストを更新する関数
+      function updateTimeInfo() {
+        const yellowMin = Math.floor(yellowTime / 60);
+        const yellowSec = yellowTime % 60;
+        const redMin = Math.floor(redTime / 60);
+        const redSec = redTime % 60;
+        
+        timeInfo.textContent = `${yellowMin}分${yellowSec}秒で黄色、${redMin}分${redSec}秒で赤色に変わります`;
+      }
+      
+      // ビープ音を設定する関数
+      function setupBeepSound() {
+        // Web Audio APIを使ってビープ音を生成
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 880; // A5ノート
+        gainNode.gain.value = 0.5;
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // AudioBufferを作成
+        const duration = 0.5;
+        const sampleRate = audioContext.sampleRate;
+        const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        for (let i = 0; i < buffer.length; i++) {
+          data[i] = Math.sin(2 * Math.PI * 880 * i / sampleRate);
+        }
+        
+        // AudioBufferSourceNodeを作成して設定
+        window.playBeep = function() {
+          const source = audioContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(gainNode);
+          source.start();
+        };
+      }
+    });
+  </script>
+</body>
+</html>
