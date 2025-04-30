@@ -7,3 +7,5 @@
 - pacman_modoki.md : 上記の説明
 - counter.html : 会議用の発表時間時計（設定時間が来ると表示が変わる）
 - counter.md : 上記の説明
+- md_indexer.py : mdファイルのインデックスを作るやつ
+- md_indexer.md : 上記の説明
