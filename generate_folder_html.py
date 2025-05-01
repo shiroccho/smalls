@@ -5,8 +5,8 @@ import base64
 from pathlib import Path
 import mimetypes
 
-# 画像ファイルの拡張子
-IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+# 表示する画像ファイルの拡張子を限定
+IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
 
 def generate_html(directory_path):
     """ディレクトリ内のフォルダとファイルを一覧表示するHTMLを生成"""
@@ -226,84 +226,12 @@ def generate_html(directory_path):
             border-top: 1px solid var(--google-border);
         }
 
-        .file-list {
-            padding: 0 16px 16px;
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 16px;
-            border-radius: var(--border-radius);
-            margin-bottom: 8px;
-            transition: all 0.2s;
-        }
-
-        .file-item:hover {
-            background-color: var(--google-gray);
-        }
-
-        .file-icon {
-            margin-right: 15px;
-            width: 24px;
+        .no-images {
+            padding: 20px;
             text-align: center;
-        }
-
-        .file-icon-pdf {
-            color: var(--google-red);
-        }
-
-        .file-icon-doc {
-            color: var(--google-blue);
-        }
-
-        .file-icon-sheet {
-            color: var(--google-green);
-        }
-
-        .file-icon-slide {
-            color: var(--google-yellow);
-        }
-
-        .file-icon-audio {
-            color: var(--google-blue);
-        }
-
-        .file-icon-video {
-            color: var(--google-red);
-        }
-
-        .file-icon-code {
-            color: var(--google-blue);
-        }
-
-        .file-icon-archive {
-            color: var(--google-yellow);
-        }
-
-        .file-name {
-            font-size: 14px;
-            color: var(--google-text-dark);
-            flex-grow: 1;
-        }
-
-        .file-name a {
-            color: var(--google-text-dark);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .file-name a:hover {
-            color: var(--google-blue);
-        }
-
-        .section-title {
-            font-size: 20px;
-            color: var(--google-text-dark);
-            font-weight: normal;
-            margin: 30px 0 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid var(--google-border);
+            color: var(--google-text);
+            font-style: italic;
+            grid-column: 1 / -1;
         }
 
         /* レスポンシブデザイン */
@@ -341,10 +269,10 @@ def generate_html(directory_path):
             <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="#4285F4"/>
             </svg>
-            <h1 class="header-title">ディレクトリ一覧: """ + os.path.basename(directory_path) + """</h1>
+            <h1 class="header-title">画像一覧: """ + os.path.basename(directory_path) + """</h1>
         </div>
         <div class="search-bar">
-            <input type="text" class="search-input" id="search-input" placeholder="ファイルを検索...">
+            <input type="text" class="search-input" id="search-input" placeholder="画像を検索...">
             <span class="search-icon">
                 <i class="fas fa-search"></i>
             </span>
@@ -379,9 +307,8 @@ def generate_html(directory_path):
         # フォルダ内のファイルを取得
         folder_items = sorted(os.listdir(folder_path))
         
-        # 画像ファイルとその他のファイルを分ける
+        # 画像ファイルのみを抽出
         image_files = []
-        other_files = []
         
         for item in folder_items:
             item_path = os.path.join(folder_path, item)
@@ -389,8 +316,6 @@ def generate_html(directory_path):
                 ext = os.path.splitext(item.lower())[1]
                 if ext in IMAGE_EXTENSIONS:
                     image_files.append(item)
-                else:
-                    other_files.append(item)
         
         # 画像ファイルがあれば表示
         if image_files:
@@ -410,89 +335,43 @@ def generate_html(directory_path):
 '''
             
             html += '                </div>\n'
-        
-        # その他のファイルを表示
-        if other_files:
-            html += '                <div class="file-list">\n'
-            
-            for file in other_files:
-                file_path = os.path.join(folder, file).replace('\\', '/')
-                file_ext = os.path.splitext(file.lower())[1]
-                
-                # ファイル拡張子に応じたアイコンとCSSクラスを設定
-                icon_info = get_file_icon(file_ext)
-                
-                html += f'''                    <div class="file-item">
-                        <div class="file-icon {icon_info['css_class']}">
-                            <i class="{icon_info['icon']}"></i>
-                        </div>
-                        <div class="file-name">
-                            <a href="{file_path}" target="_blank">{file}</a>
-                        </div>
-                    </div>
-'''
-            
-            html += '                </div>\n'
+        else:
+            html += '                <div class="image-gallery"><div class="no-images">対象の画像ファイルはありません</div></div>\n'
         
         html += '            </div>\n'
         html += '        </div>\n\n'
     
-    # ルートディレクトリのファイルを処理
+    # ルートディレクトリの画像ファイルを処理
     root_files = [item for item in items if os.path.isfile(os.path.join(directory_path, item))]
     
-    if root_files:
-        html += '        <div class="section-title">ファイル</div>\n'
+    # 画像ファイルを抽出
+    image_files = []
+    
+    for item in root_files:
+        item_path = os.path.join(directory_path, item)
+        ext = os.path.splitext(item.lower())[1]
+        if ext in IMAGE_EXTENSIONS:
+            image_files.append(item)
+    
+    if image_files:
+        html += '        <div class="section-title">このフォルダの画像</div>\n'
+        html += '        <div class="image-gallery">\n'
         
-        # 画像ファイルとその他のファイルを分ける
-        image_files = []
-        other_files = []
-        
-        for item in root_files:
-            item_path = os.path.join(directory_path, item)
-            ext = os.path.splitext(item.lower())[1]
-            if ext in IMAGE_EXTENSIONS:
-                image_files.append(item)
-            else:
-                other_files.append(item)
-        
-        # 画像ファイルがあれば表示
-        if image_files:
-            html += '        <div class="image-gallery">\n'
-            
-            for image in image_files:
-                html += f'''            <div class="image-item">
-                <a href="{image}" target="_blank">
-                    <div class="image-container">
-                        <img src="{image}" class="thumbnail" alt="{image}">
-                    </div>
-                    <div class="image-name">{image}</div>
-                </a>
-            </div>
-'''
-            
-            html += '        </div>\n'
-        
-        # その他のファイルを表示
-        if other_files:
-            html += '        <div class="file-list">\n'
-            
-            for file in other_files:
-                file_ext = os.path.splitext(file.lower())[1]
-                
-                # ファイル拡張子に応じたアイコンとCSSクラスを設定
-                icon_info = get_file_icon(file_ext)
-                
-                html += f'''            <div class="file-item">
-                <div class="file-icon {icon_info['css_class']}">
-                    <i class="{icon_info['icon']}"></i>
+        for image in image_files:
+            html += f'''            <div class="image-item">
+            <a href="{image}" target="_blank">
+                <div class="image-container">
+                    <img src="{image}" class="thumbnail" alt="{image}">
                 </div>
-                <div class="file-name">
-                    <a href="{file}" target="_blank">{file}</a>
-                </div>
-            </div>
+                <div class="image-name">{image}</div>
+            </a>
+        </div>
 '''
-            
-            html += '        </div>\n'
+        
+        html += '        </div>\n'
+    else:
+        html += '        <div class="section-title">このフォルダの画像</div>\n'
+        html += '        <div class="image-gallery"><div class="no-images">対象の画像ファイルはありません</div></div>\n'
 
     # HTMLの終了部分とJavaScript
     html += """    </main>
@@ -508,18 +387,6 @@ def generate_html(directory_path):
             $('#search-input').on('keyup', function() {
                 var searchText = $(this).val().toLowerCase();
                 
-                // ファイル項目を検索
-                $('.file-item').each(function() {
-                    var fileName = $(this).find('.file-name').text().toLowerCase();
-                    if (fileName.indexOf(searchText) > -1) {
-                        $(this).show();
-                        // 親フォルダを開く
-                        $(this).closest('.folder-content').prev('.folder-header').addClass('active');
-                    } else {
-                        $(this).hide();
-                    }
-                });
-                
                 // 画像項目を検索
                 $('.image-item').each(function() {
                     var imageName = $(this).find('.image-name').text().toLowerCase();
@@ -534,9 +401,21 @@ def generate_html(directory_path):
                 
                 // 検索テキストが空の場合はすべて表示
                 if (searchText === '') {
-                    $('.file-item, .image-item').show();
+                    $('.image-item').show();
                     $('.folder-header').removeClass('active');
                 }
+                
+                // 「対象の画像ファイルはありません」の表示/非表示
+                $('.image-gallery').each(function() {
+                    var visibleItems = $(this).find('.image-item:visible').length;
+                    var noImagesMsg = $(this).find('.no-images');
+                    
+                    if (visibleItems === 0 && noImagesMsg.length === 0) {
+                        $(this).append('<div class="no-images">一致する画像がありません</div>');
+                    } else if (visibleItems > 0) {
+                        $(this).find('.no-images').remove();
+                    }
+                });
             });
         });
     </script>
@@ -544,35 +423,6 @@ def generate_html(directory_path):
 </html>"""
 
     return html
-
-def get_file_icon(extension):
-    """ファイル拡張子に応じたFont Awesomeのアイコンクラスとカスタムクラスを返す"""
-    icons = {
-        '.pdf': {'icon': 'fas fa-file-pdf', 'css_class': 'file-icon-pdf'},
-        '.doc': {'icon': 'fas fa-file-word', 'css_class': 'file-icon-doc'},
-        '.docx': {'icon': 'fas fa-file-word', 'css_class': 'file-icon-doc'},
-        '.xls': {'icon': 'fas fa-file-excel', 'css_class': 'file-icon-sheet'},
-        '.xlsx': {'icon': 'fas fa-file-excel', 'css_class': 'file-icon-sheet'},
-        '.ppt': {'icon': 'fas fa-file-powerpoint', 'css_class': 'file-icon-slide'},
-        '.pptx': {'icon': 'fas fa-file-powerpoint', 'css_class': 'file-icon-slide'},
-        '.txt': {'icon': 'fas fa-file-alt', 'css_class': ''},
-        '.zip': {'icon': 'fas fa-file-archive', 'css_class': 'file-icon-archive'},
-        '.rar': {'icon': 'fas fa-file-archive', 'css_class': 'file-icon-archive'},
-        '.7z': {'icon': 'fas fa-file-archive', 'css_class': 'file-icon-archive'},
-        '.mp3': {'icon': 'fas fa-file-audio', 'css_class': 'file-icon-audio'},
-        '.wav': {'icon': 'fas fa-file-audio', 'css_class': 'file-icon-audio'},
-        '.mp4': {'icon': 'fas fa-file-video', 'css_class': 'file-icon-video'},
-        '.avi': {'icon': 'fas fa-file-video', 'css_class': 'file-icon-video'},
-        '.mov': {'icon': 'fas fa-file-video', 'css_class': 'file-icon-video'},
-        '.html': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-        '.css': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-        '.js': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-        '.py': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-        '.json': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-        '.xml': {'icon': 'fas fa-file-code', 'css_class': 'file-icon-code'},
-    }
-    
-    return icons.get(extension, {'icon': 'fas fa-file', 'css_class': ''})
 
 def main():
     # コマンドライン引数からディレクトリパスを取得するか、現在のディレクトリを使用
@@ -594,13 +444,13 @@ def main():
     html_content = generate_html(directory_path)
     
     # 出力ファイル名を作成（ディレクトリ名をベースに）
-    output_filename = f"directory_listing_{os.path.basename(directory_path)}.html"
+    output_filename = f"image_listing_{os.path.basename(directory_path)}.html"
     
     # HTMLをファイルに書き込む
     with open(output_filename, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print(f"HTMLファイルが生成されました: {output_filename}")
+    print(f"画像一覧HTMLファイルが生成されました: {output_filename}")
 
 if __name__ == "__main__":
     main()
