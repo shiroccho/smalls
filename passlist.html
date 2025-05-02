@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスワード管理アプリ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], 
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .edit-btn {
+            background-color: #2ecc71;
+        }
+        
+        .edit-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .toggle-password {
+            margin-left: 8px;
+            padding: 2px 6px;
+            font-size: 12px;
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .toggle-password:hover {
+            background-color: #e67e22;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .csv-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .csv-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .file-input {
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>パスワード管理アプリ</h1>
+        
+        <!-- データ入力フォーム -->
+        <form id="passwordForm">
+            <input type="hidden" id="editIndex" value="">
+            <div class="form-group">
+                <label for="site">サイト名</label>
+                <input type="text" id="site" required>
+            </div>
+            <div class="form-group">
+                <label for="id">ID</label>
+                <input type="text" id="id" required>
+            </div>
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="form-group">
+                <label for="memo">メモ</label>
+                <input type="text" id="memo">
+            </div>
+            <div class="buttons">
+                <button type="submit" id="saveBtn">保存</button>
+                <button type="button" id="resetBtn">リセット</button>
+            </div>
+        </form>
+        
+        <!-- フィルタリング -->
+        <div class="filter-section">
+            <label for="siteFilter">サイトでフィルタリング</label>
+            <select id="siteFilter">
+                <option value="all">すべてのサイト</option>
+            </select>
+        </div>
+        
+        <!-- データ表示テーブル -->
+        <table>
+            <thead>
+                <tr>
+                    <th>サイト</th>
+                    <th>ID</th>
+                    <th>パスワード</th>
+                    <th>メモ</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="passwordList"></tbody>
+        </table>
+        
+        <!-- CSVインポート/エクスポート -->
+        <div class="csv-section">
+            <h2>データのインポート/エクスポート</h2>
+            <div class="csv-buttons">
+                <button id="exportBtn">CSVとしてエクスポート</button>
+                <div>
+                    <button id="importBtnTrigger">CSVからインポート</button>
+                    <input type="file" id="importFile" accept=".csv" class="hidden">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM要素の取得
+            const passwordForm = document.getElementById('passwordForm');
+            const siteInput = document.getElementById('site');
+            const idInput = document.getElementById('id');
+            const passwordInput = document.getElementById('password');
+            const memoInput = document.getElementById('memo');
+            const editIndexInput = document.getElementById('editIndex');
+            const passwordList = document.getElementById('passwordList');
+            const siteFilter = document.getElementById('siteFilter');
+            const saveBtn = document.getElementById('saveBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const importBtnTrigger = document.getElementById('importBtnTrigger');
+            const importFile = document.getElementById('importFile');
+            
+            // ローカルストレージからデータ取得
+            let passwords = JSON.parse(localStorage.getItem('passwords')) || [];
+            
+            // アプリ初期化
+            initApp();
+            
+            // フォーム送信イベント
+            passwordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                savePassword();
+            });
+            
+            // フォームリセットボタン
+            resetBtn.addEventListener('click', function() {
+                resetForm();
+            });
+            
+            // サイトフィルター変更イベント
+            siteFilter.addEventListener('change', function() {
+                renderPasswordList();
+            });
+            
+            // CSVエクスポートボタン
+            exportBtn.addEventListener('click', function() {
+                exportToCSV();
+            });
+            
+            // CSVインポートボタン
+            importBtnTrigger.addEventListener('click', function() {
+                importFile.click();
+            });
+            
+            // ファイル選択イベント
+            importFile.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    importFromCSV(e.target.files[0]);
+                }
+            });
+            
+            // アプリケーション初期化関数
+            function initApp() {
+                renderPasswordList();
+                updateSiteFilter();
+            }
+            
+            // パスワードの保存・更新関数
+            function savePassword() {
+                const password = {
+                    site: siteInput.value.trim(),
+                    id: idInput.value.trim(),
+                    password: passwordInput.value,
+                    memo: memoInput.value.trim()
+                };
+                
+                const editIndex = editIndexInput.value;
+                
+                if (editIndex === '') {
+                    // 新規追加
+                    passwords.push(password);
+                } else {
+                    // 更新
+                    passwords[parseInt(editIndex)] = password;
+                }
+                
+                // ローカルストレージに保存
+                localStorage.setItem('passwords', JSON.stringify(passwords));
+                
+                // 表示を更新
+                resetForm();
+                renderPasswordList();
+                updateSiteFilter();
+            }
+            
+            // フォームリセット関数
+            function resetForm() {
+                passwordForm.reset();
+                editIndexInput.value = '';
+                saveBtn.textContent = '保存';
+            }
+            
+            // パスワードリスト表示関数
+            function renderPasswordList() {
+                passwordList.innerHTML = '';
+                
+                let filteredPasswords = passwords;
+                const selectedSite = siteFilter.value;
+                
+                // フィルタリング
+                if (selectedSite !== 'all') {
+                    filteredPasswords = passwords.filter(p => p.site === selectedSite);
+                }
+                
+                // 各パスワードデータを表示
+                filteredPasswords.forEach((password, index) => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${escapeHTML(password.site)}</td>
+                        <td>${escapeHTML(password.id)}</td>
+                        <td>
+                            <span class="password-masked">${maskPassword(password.password)}</span>
+                            <span class="password-visible" style="display:none;">${escapeHTML(password.password)}</span>
+                            <button class="toggle-password" data-row="${index}">表示</button>
+                        </td>
+                        <td>${escapeHTML(password.memo)}</td>
+                        <td class="action-buttons">
+                            <button class="edit-btn" data-index="${index}">編集</button>
+                            <button class="delete-btn" data-index="${index}">削除</button>
+                        </td>
+                    `;
+                    
+                    passwordList.appendChild(row);
+                });
+                
+                // 編集ボタンのイベントリスナーを追加
+                document.querySelectorAll('.edit-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = this.getAttribute('data-index');
+                        editPassword(index);
+                    });
+                });
+                
+                // 削除ボタンのイベントリスナーを追加
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = this.getAttribute('data-index');
+                        deletePassword(index);
+                    });
+                });
+                
+                // パスワード表示切替ボタンのイベントリスナーを追加
+                document.querySelectorAll('.toggle-password').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const row = this.getAttribute('data-row');
+                        const maskedElement = this.parentNode.querySelector('.password-masked');
+                        const visibleElement = this.parentNode.querySelector('.password-visible');
+                        
+                        if (maskedElement.style.display === 'none') {
+                            // パスワードを隠す
+                            maskedElement.style.display = '';
+                            visibleElement.style.display = 'none';
+                            this.textContent = '表示';
+                        } else {
+                            // パスワードを表示
+                            maskedElement.style.display = 'none';
+                            visibleElement.style.display = '';
+                            this.textContent = '隠す';
+                        }
+                    });
+                });
+            }
+            
+            // パスワード編集関数
+            function editPassword(index) {
+                const password = passwords[index];
+                
+                siteInput.value = password.site;
+                idInput.value = password.id;
+                passwordInput.value = password.password;
+                memoInput.value = password.memo;
+                editIndexInput.value = index;
+                
+                saveBtn.textContent = '更新';
+            }
+            
+            // パスワード削除関数
+            function deletePassword(index) {
+                if (confirm('このパスワードを削除してもよろしいですか？')) {
+                    passwords.splice(index, 1);
+                    localStorage.setItem('passwords', JSON.stringify(passwords));
+                    renderPasswordList();
+                    updateSiteFilter();
+                }
+            }
+            
+            // パスワードマスキング関数
+            function maskPassword(password) {
+                return '•'.repeat(password.length);
+            }
+            
+            // サイトフィルターの更新関数
+            function updateSiteFilter() {
+                // 現在の選択を保存
+                const currentSelection = siteFilter.value;
+                
+                // 重複しないサイト名を取得
+                const sites = [...new Set(passwords.map(p => p.site))];
+                
+                // オプションを更新
+                siteFilter.innerHTML = '<option value="all">すべてのサイト</option>';
+                
+                sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    siteFilter.appendChild(option);
+                });
+                
+                // 以前の選択を復元（存在する場合）
+                if (currentSelection !== 'all' && sites.includes(currentSelection)) {
+                    siteFilter.value = currentSelection;
+                }
+            }
+            
+            // CSVエクスポート関数
+            function exportToCSV() {
+                if (passwords.length === 0) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+                
+                // CSVヘッダー
+                let csv = 'site,id,password,memo\n';
+                
+                // データ行
+                passwords.forEach(password => {
+                    const row = [
+                        csvEscape(password.site),
+                        csvEscape(password.id),
+                        csvEscape(password.password),
+                        csvEscape(password.memo)
+                    ].join(',');
+                    csv += row + '\n';
+                });
+                
+                // ダウンロード
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'passwords.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // CSVインポート関数
+            function importFromCSV(file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    
+                    // ヘッダー行を確認（オプショナル）
+                    const header = lines[0].toLowerCase();
+                    if (!header.includes('site') || !header.includes('id') || !header.includes('password')) {
+                        alert('CSVファイルの形式が正しくありません。site,id,password,memoの列が必要です。');
+                        return;
+                    }
+                    
+                    // 確認ダイアログ
+                    const confirmImport = confirm(`CSVからインポートすると、現在のデータは上書きされます。続行しますか？`);
+                    if (!confirmImport) return;
+                    
+                    const newPasswords = [];
+                    
+                    // 1行目はヘッダーなのでスキップ
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line) {
+                            const values = parseCSVLine(line);
+                            
+                            if (values.length >= 3) {
+                                newPasswords.push({
+                                    site: values[0] || '',
+                                    id: values[1] || '',
+                                    password: values[2] || '',
+                                    memo: values[3] || ''
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (newPasswords.length > 0) {
+                        passwords = newPasswords;
+                        localStorage.setItem('passwords', JSON.stringify(passwords));
+                        renderPasswordList();
+                        updateSiteFilter();
+                        alert(`${newPasswords.length}件のパスワードがインポートされました。`);
+                    } else {
+                        alert('インポートするデータがありませんでした。');
+                    }
+                };
+                
+                reader.readAsText(file);
+            }
+            
+            // CSVライン解析関数（シンプルなCSVパーサー）
+            function parseCSVLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        if (inQuotes && i < line.length - 1 && line[i + 1] === '"') {
+                            // ダブルクォート内のエスケープされたダブルクォート
+                            current += '"';
+                            i++;
+                        } else {
+                            // クォート状態の切り替え
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        // フィールドの区切り
+                        result.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                // 最後のフィールド
+                result.push(current);
+                
+                return result;
+            }
+            
+            // CSV用文字列エスケープ関数
+            function csvEscape(str) {
+                str = String(str || '');
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }
+            
+            // HTML特殊文字エスケープ関数
+            function escapeHTML(str) {
+                return String(str || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        });
+    </script>
+</body>
+</html>
