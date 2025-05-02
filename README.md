@@ -11,3 +11,5 @@
 - md_indexer.md : 上記の説明
 - passlist.py : サイトのパスワードを管理する用（ブラウザのローカルストレージに保存されちゃうやつ）
 - passlist.md : 上記の説明
+- generate_folder_html.py : ディレクトリ内の画像ファイル一覧を作成するアプリ
+- generate_folder_html.md : 上記の説明
