@@ -9,3 +9,5 @@
 - counter.md : 上記の説明
 - md_indexer.py : mdファイルのインデックスを作るやつ
 - md_indexer.md : 上記の説明
+- passlist.py : サイトのパスワードを管理する用（ブラウザのローカルストレージに保存されちゃうやつ）
+- passlist.md : 上記の説明
