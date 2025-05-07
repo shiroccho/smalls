@@ -15,3 +15,5 @@
 - generate_folder_html.md : 上記の説明
 - sqlite_test.php : レンサバで sqlite が使えるかテスト用のスクリプト
 - sqlite_test.md : 上記の説明
+- pocketmoneybook : お小遣い帳
+- pocketmoneybook.md : 上記の説明
