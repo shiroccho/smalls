@@ -17,3 +17,5 @@
 - sqlite_test.md : 上記の説明
 - pocketmoneybook : お小遣い帳
 - pocketmoneybook.md : 上記の説明
+- cron.html : crontab の行ジェネレータ
+- cron.md : 上記の説明

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crontab Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .time-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .time-selector select {
+            flex: 1;
+        }
+        .output-container {
+            margin-top: 30px;
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        #crontab-output {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            background-color: #fff;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .copy-btn {
+            background-color: #4CAF50;
+            color: white;
+            flex: 1;
+        }
+        .copy-btn:hover {
+            background-color: #3e8e41;
+        }
+        .reset-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .reset-btn:hover {
+            background-color: #d32f2f;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .success-message {
+            color: green;
+            display: none;
+            margin-left: 10px;
+        }
+        .explainer {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Crontab Generator</h1>
+        
+        <div class="form-group">
+            <label>分 (Minute):</label>
+            <div class="time-selector">
+                <select id="minute-type">
+                    <option value="specific">特定の値</option>
+                    <option value="every">毎分 (*)</option>
+                    <option value="range">範囲</option>
+                    <option value="interval">間隔</option>
+                </select>
+                <select id="minute-value" class="specific-option">
+                    <option value="0">0</option>
+                </select>
+                <select id="minute-range-from" class="range-option" style="display:none;">
+                    <option value="0">0</option>
+                </select>
+                <select id="minute-range-to" class="range-option" style="display:none;">
+                    <option value="59">59</option>
+                </select>
+                <select id="minute-interval" class="interval-option" style="display:none;">
+                    <option value="1">1</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>時 (Hour):</label>
+            <div class="time-selector">
+                <select id="hour-type">
+                    <option value="specific">特定の値</option>
+                    <option value="every">毎時 (*)</option>
+                    <option value="range">範囲</option>
+                    <option value="interval">間隔</option>
+                </select>
+                <select id="hour-value" class="specific-option">
+                    <option value="0">0</option>
+                </select>
+                <select id="hour-range-from" class="range-option" style="display:none;">
+                    <option value="0">0</option>
+                </select>
+                <select id="hour-range-to" class="range-option" style="display:none;">
+                    <option value="23">23</option>
+                </select>
+                <select id="hour-interval" class="interval-option" style="display:none;">
+                    <option value="1">1</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>日 (Day of Month):</label>
+            <div class="time-selector">
+                <select id="dom-type">
+                    <option value="specific">特定の値</option>
+                    <option value="every">毎日 (*)</option>
+                    <option value="range">範囲</option>
+                    <option value="interval">間隔</option>
+                </select>
+                <select id="dom-value" class="specific-option">
+                    <option value="1">1</option>
+                </select>
+                <select id="dom-range-from" class="range-option" style="display:none;">
+                    <option value="1">1</option>
+                </select>
+                <select id="dom-range-to" class="range-option" style="display:none;">
+                    <option value="31">31</option>
+                </select>
+                <select id="dom-interval" class="interval-option" style="display:none;">
+                    <option value="1">1</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>月 (Month):</label>
+            <div class="time-selector">
+                <select id="month-type">
+                    <option value="specific">特定の値</option>
+                    <option value="every">毎月 (*)</option>
+                    <option value="range">範囲</option>
+                    <option value="interval">間隔</option>
+                </select>
+                <select id="month-value" class="specific-option">
+                    <option value="1">1 (1月)</option>
+                </select>
+                <select id="month-range-from" class="range-option" style="display:none;">
+                    <option value="1">1 (1月)</option>
+                </select>
+                <select id="month-range-to" class="range-option" style="display:none;">
+                    <option value="12">12 (12月)</option>
+                </select>
+                <select id="month-interval" class="interval-option" style="display:none;">
+                    <option value="1">1</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>曜日 (Day of Week):</label>
+            <div class="time-selector">
+                <select id="dow-type">
+                    <option value="specific">特定の値</option>
+                    <option value="every">毎曜日 (*)</option>
+                    <option value="range">範囲</option>
+                </select>
+                <select id="dow-value" class="specific-option">
+                    <option value="0">0 (日曜日)</option>
+                </select>
+                <select id="dow-range-from" class="range-option" style="display:none;">
+                    <option value="0">0 (日曜日)</option>
+                </select>
+                <select id="dow-range-to" class="range-option" style="display:none;">
+                    <option value="6">6 (土曜日)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>実行コマンド:</label>
+            <input type="text" id="command" placeholder="/path/to/command">
+            <div class="error-message" id="command-error">コマンドがフルパス（/で始まる）ではありません</div>
+        </div>
+        
+        <div class="output-container">
+            <label>生成されたcrontab行:</label>
+            <input type="text" id="crontab-output" readonly>
+            <div class="button-group">
+                <button class="copy-btn" id="copy-btn">コピー</button>
+                <span class="success-message" id="copy-success">コピーしました!</span>
+                <button class="reset-btn" id="reset-btn">リセット</button>
+            </div>
+        </div>
+        
+        <div class="explainer">
+            <h3>crontabの書式について</h3>
+            <p>crontabは次の5つのフィールドとコマンドで構成されています:</p>
+            <p><code>分 時 日 月 曜日 コマンド</code></p>
+            
+            <table>
+                <tr>
+                    <th>フィールド</th>
+                    <th>許容値</th>
+                    <th>特殊文字</th>
+                </tr>
+                <tr>
+                    <td>分</td>
+                    <td>0-59</td>
+                    <td rowspan="5">
+                        * (すべての値)<br>
+                        , (値のリスト)<br>
+                        - (範囲)<br>
+                        / (間隔)
+                    </td>
+                </tr>
+                <tr>
+                    <td>時</td>
+                    <td>0-23</td>
+                </tr>
+                <tr>
+                    <td>日</td>
+                    <td>1-31</td>
+                </tr>
+                <tr>
+                    <td>月</td>
+                    <td>1-12</td>
+                </tr>
+                <tr>
+                    <td>曜日</td>
+                    <td>0-6 (0=日曜日)</td>
+                </tr>
+            </table>
+            
+            <h4>例:</h4>
+            <ul>
+                <li><code>0 12 * * * /usr/bin/backup.sh</code> - 毎日12:00に実行</li>
+                <li><code>*/15 * * * * /usr/bin/check-service.sh</code> - 15分ごとに実行</li>
+                <li><code>0 0 1 * * /usr/bin/monthly-report.sh</code> - 毎月1日の0:00に実行</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 分のセレクトボックスを初期化
+            initializeSelectOptions('minute-value', 0, 59);
+            initializeSelectOptions('minute-range-from', 0, 59);
+            initializeSelectOptions('minute-range-to', 0, 59, 59);
+            initializeSelectOptions('minute-interval', 1, 30);
+            
+            // 時のセレクトボックスを初期化
+            initializeSelectOptions('hour-value', 0, 23);
+            initializeSelectOptions('hour-range-from', 0, 23);
+            initializeSelectOptions('hour-range-to', 0, 23, 23);
+            initializeSelectOptions('hour-interval', 1, 12);
+            
+            // 日のセレクトボックスを初期化
+            initializeSelectOptions('dom-value', 1, 31);
+            initializeSelectOptions('dom-range-from', 1, 31);
+            initializeSelectOptions('dom-range-to', 1, 31, 31);
+            initializeSelectOptions('dom-interval', 1, 15);
+            
+            // 月のセレクトボックスを初期化
+            const monthNames = [
+                '1 (1月)', '2 (2月)', '3 (3月)', '4 (4月)', '5 (5月)', '6 (6月)',
+                '7 (7月)', '8 (8月)', '9 (9月)', '10 (10月)', '11 (11月)', '12 (12月)'
+            ];
+            initializeSelectOptionsWithNames('month-value', 1, 12, monthNames);
+            initializeSelectOptionsWithNames('month-range-from', 1, 12, monthNames);
+            initializeSelectOptionsWithNames('month-range-to', 1, 12, monthNames, 12);
+            initializeSelectOptions('month-interval', 1, 6);
+            
+            // 曜日のセレクトボックスを初期化
+            const dowNames = [
+                '0 (日曜日)', '1 (月曜日)', '2 (火曜日)', '3 (水曜日)',
+                '4 (木曜日)', '5 (金曜日)', '6 (土曜日)'
+            ];
+            initializeSelectOptionsWithNames('dow-value', 0, 6, dowNames);
+            initializeSelectOptionsWithNames('dow-range-from', 0, 6, dowNames);
+            initializeSelectOptionsWithNames('dow-range-to', 0, 6, dowNames, 6);
+            
+            // タイプ選択時の表示切り替え
+            const typeSelectors = ['minute-type', 'hour-type', 'dom-type', 'month-type', 'dow-type'];
+            typeSelectors.forEach(function(selector) {
+                document.getElementById(selector).addEventListener('change', function() {
+                    updateOptionsVisibility(this);
+                    updateCrontab();
+                });
+            });
+            
+            // すべての入力フィールドで値が変更されたときにcrontabを更新
+            const allSelects = document.querySelectorAll('select');
+            allSelects.forEach(function(select) {
+                select.addEventListener('change', updateCrontab);
+            });
+            
+            // コマンド入力時のバリデーションとcrontab更新
+            const commandInput = document.getElementById('command');
+            commandInput.addEventListener('input', function() {
+                validateCommand();
+                updateCrontab();
+            });
+            
+            // コピーボタンのイベント
+            document.getElementById('copy-btn').addEventListener('click', function() {
+                const output = document.getElementById('crontab-output');
+                output.select();
+                document.execCommand('copy');
+                
+                const successMsg = document.getElementById('copy-success');
+                successMsg.style.display = 'inline';
+                setTimeout(function() {
+                    successMsg.style.display = 'none';
+                }, 2000);
+            });
+            
+            // リセットボタンのイベント
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                resetForm();
+            });
+            
+            // 初期crontab行を生成
+            updateCrontab();
+        });
+        
+        function initializeSelectOptions(id, start, end, defaultValue = null) {
+            const select = document.getElementById(id);
+            select.innerHTML = '';
+            
+            for (let i = start; i <= end; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                select.appendChild(option);
+            }
+            
+            if (defaultValue !== null) {
+                select.value = defaultValue;
+            }
+        }
+        
+        function initializeSelectOptionsWithNames(id, start, end, names, defaultValue = null) {
+            const select = document.getElementById(id);
+            select.innerHTML = '';
+            
+            for (let i = start; i <= end; i++) {
+                const index = i - start;
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = names[index];
+                select.appendChild(option);
+            }
+            
+            if (defaultValue !== null) {
+                select.value = defaultValue;
+            }
+        }
+        
+        function updateOptionsVisibility(typeSelector) {
+            const prefix = typeSelector.id.split('-')[0];
+            const value = typeSelector.value;
+            
+            // すべてのオプションを非表示
+            const specificOption = document.getElementById(`${prefix}-value`);
+            const rangeFromOption = document.getElementById(`${prefix}-range-from`);
+            const rangeToOption = document.getElementById(`${prefix}-range-to`);
+            const intervalOption = document.getElementById(`${prefix}-interval`);
+            
+            specificOption.style.display = 'none';
+            if (rangeFromOption) rangeFromOption.style.display = 'none';
+            if (rangeToOption) rangeToOption.style.display = 'none';
+            if (intervalOption) intervalOption.style.display = 'none';
+            
+            // 選択されたタイプに応じて表示
+            switch (value) {
+                case 'specific':
+                    specificOption.style.display = '';
+                    break;
+                case 'range':
+                    if (rangeFromOption) rangeFromOption.style.display = '';
+                    if (rangeToOption) rangeToOption.style.display = '';
+                    break;
+                case 'interval':
+                    if (intervalOption) intervalOption.style.display = '';
+                    break;
+                case 'every':
+                    // 何も表示しない
+                    break;
+            }
+        }
+        
+        function validateCommand() {
+            const command = document.getElementById('command').value.trim();
+            const errorMsg = document.getElementById('command-error');
+            
+            if (command === '') {
+                errorMsg.style.display = 'none';
+                return false;
+            }
+            
+            if (!command.startsWith('/')) {
+                errorMsg.style.display = 'block';
+                return false;
+            } else {
+                errorMsg.style.display = 'none';
+                return true;
+            }
+        }
+        
+        function getCronValue(prefix) {
+            const type = document.getElementById(`${prefix}-type`).value;
+            
+            switch (type) {
+                case 'specific':
+                    return document.getElementById(`${prefix}-value`).value;
+                case 'every':
+                    return '*';
+                case 'range': {
+                    const from = document.getElementById(`${prefix}-range-from`).value;
+                    const to = document.getElementById(`${prefix}-range-to`).value;
+                    return `${from}-${to}`;
+                }
+                case 'interval':
+                    return `*/${document.getElementById(`${prefix}-interval`).value}`;
+                default:
+                    return '*';
+            }
+        }
+        
+        function updateCrontab() {
+            const minute = getCronValue('minute');
+            const hour = getCronValue('hour');
+            const dom = getCronValue('dom');
+            const month = getCronValue('month');
+            const dow = getCronValue('dow');
+            const command = document.getElementById('command').value.trim();
+            
+            let crontabLine = `${minute} ${hour} ${dom} ${month} ${dow}`;
+            
+            if (command) {
+                crontabLine += ` ${command}`;
+            }
+            
+            document.getElementById('crontab-output').value = crontabLine;
+        }
+        
+        function resetForm() {
+            const typeSelectors = ['minute-type', 'hour-type', 'dom-type', 'month-type', 'dow-type'];
+            typeSelectors.forEach(function(selector) {
+                document.getElementById(selector).value = 'specific';
+                updateOptionsVisibility(document.getElementById(selector));
+            });
+            
+            document.getElementById('minute-value').value = '0';
+            document.getElementById('hour-value').value = '0';
+            document.getElementById('dom-value').value = '1';
+            document.getElementById('month-value').value = '1';
+            document.getElementById('dow-value').value = '0';
+            document.getElementById('command').value = '';
+            document.getElementById('command-error').style.display = 'none';
+            
+            updateCrontab();
+        }
+    </script>
+</body>
+</html>
