@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>来場者記録アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .display {
+            background: #f8f9ff;
+            border: 2px solid #e1e5f2;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .key {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: none;
+            border-radius: 15px;
+            height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .key:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .key:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .action-buttons {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn.secondary {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+        
+        .btn.secondary:hover {
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
+        }
+        
+        .btn.danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+        
+        .btn.success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+        }
+        
+        .user-info {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid #e1e5f2;
+        }
+        
+        .user-info h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .user-info p {
+            font-size: 18px;
+            color: #666;
+            margin: 10px 0;
+        }
+        
+        .management-screen {
+            padding: 20px 0;
+        }
+        
+        .date-input {
+            margin-bottom: 20px;
+        }
+        
+        .date-input input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5f2;
+            border-radius: 10px;
+            font-size: 16px;
+            background: #f8f9ff;
+        }
+        
+        .visitor-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e1e5f2;
+            border-radius: 10px;
+            background: #f8f9ff;
+        }
+        
+        .visitor-item {
+            padding: 15px;
+            border-bottom: 1px solid #e1e5f2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .visitor-item:last-child {
+            border-bottom: none;
+        }
+        
+        .visitor-time {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #56ab2f;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .display {
+                font-size: 24px;
+                min-height: 60px;
+            }
+            
+            .key {
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>来場者記録システム</h1>
+            <p id="current-time"></p>
+        </div>
+        
+        <!-- メイン画面 -->
+        <div id="main-screen" class="screen active">
+            <div class="content">
+                <div class="display" id="code-display">コードを入力してください</div>
+                
+                <div class="keypad">
+                    <button class="key" onclick="addDigit('1')">1</button>
+                    <button class="key" onclick="addDigit('2')">2</button>
+                    <button class="key" onclick="addDigit('3')">3</button>
+                    <button class="key" onclick="addDigit('4')">4</button>
+                    <button class="key" onclick="addDigit('5')">5</button>
+                    <button class="key" onclick="addDigit('6')">6</button>
+                    <button class="key" onclick="addDigit('7')">7</button>
+                    <button class="key" onclick="addDigit('8')">8</button>
+                    <button class="key" onclick="addDigit('9')">9</button>
+                    <button class="key" onclick="clearCode()">クリア</button>
+                    <button class="key" onclick="addDigit('0')">0</button>
+                    <button class="key" onclick="deleteDigit()">削除</button>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn" onclick="confirmCode()">確認</button>
+                    <button class="btn secondary" onclick="showManagement()">管理</button>
+                </div>
+                
+                <div id="error-message" class="error"></div>
+            </div>
+        </div>
+        
+        <!-- 確認画面 -->
+        <div id="confirm-screen" class="screen">
+            <div class="content">
+                <div class="user-info">
+                    <h2>来場者情報確認</h2>
+                    <p><strong>コード:</strong> <span id="confirm-code"></span></p>
+                    <p><strong>名前:</strong> <span id="confirm-name"></span></p>
+                    <p><strong>日時:</strong> <span id="confirm-time"></span></p>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn success" onclick="submitRecord()">送信</button>
+                    <button class="btn secondary" onclick="goBack()">戻る</button>
+                </div>
+                
+                <div id="confirm-message"></div>
+            </div>
+        </div>
+        
+        <!-- 管理画面 -->
+        <div id="management-screen" class="screen">
+            <div class="content">
+                <div class="management-screen">
+                    <h2 style="text-align: center; margin-bottom: 20px; color: #333;">来場者管理</h2>
+                    
+                    <div class="date-input">
+                        <input type="date" id="search-date" onchange="searchByDate()">
+                    </div>
+                    
+                    <div class="action-buttons" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; gap: 10px;">
+                        <button class="btn" onclick="searchByDate()">検索</button>
+                        <button class="btn secondary" onclick="exportCSV()">CSV出力</button>
+                        <button class="btn" onclick="showAllRecords()" style="grid-column: 1 / -1;">全件表示</button>
+                        <button class="btn danger" onclick="clearAllRecords()" style="grid-column: 1 / -1;">記録抹消</button>
+                        <button class="btn danger" onclick="goToMain()" style="grid-column: 1 / -1;">戻る</button>
+                    </div>
+                    
+                    <div id="visitor-count" style="text-align: center; margin: 15px 0; font-weight: bold; color: #666;"></div>
+                    
+                    <div class="visitor-list" id="visitor-list">
+                        <div style="text-align: center; padding: 20px; color: #666;">
+                            日付を選択して検索してください
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCode = '';
+        let memberData = [];
+        let visitRecords = [];
+        
+        // 時刻表示を更新
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ja-JP');
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // CSVファイルを読み込み
+        async function loadMemberData() {
+            try {
+                const response = await fetch('member.csv');
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+                
+                memberData = lines.slice(1).map(line => {
+                    const [name, code] = line.split(',').map(item => item.trim());
+                    return { name, code };
+                });
+                
+                console.log('メンバーデータ読み込み完了:', memberData.length + '件');
+            } catch (error) {
+                console.error('CSVファイルの読み込みエラー:', error);
+                showError('メンバーデータの読み込みに失敗しました');
+            }
+        }
+        
+        // 数字を追加
+        function addDigit(digit) {
+            if (currentCode.length < 6) {
+                currentCode += digit;
+                updateDisplay();
+            }
+        }
+        
+        // 最後の数字を削除
+        function deleteDigit() {
+            currentCode = currentCode.slice(0, -1);
+            updateDisplay();
+        }
+        
+        // コードをクリア
+        function clearCode() {
+            currentCode = '';
+            updateDisplay();
+        }
+        
+        // 表示を更新
+        function updateDisplay() {
+            const display = document.getElementById('code-display');
+            display.textContent = currentCode || 'コードを入力してください';
+        }
+        
+        // エラーメッセージを表示
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            setTimeout(() => {
+                document.getElementById('error-message').textContent = '';
+            }, 3000);
+        }
+        
+        // コードを確認
+        function confirmCode() {
+            if (!currentCode) {
+                showError('コードを入力してください');
+                return;
+            }
+            
+            const member = memberData.find(m => m.code === currentCode);
+            if (!member) {
+                showError('該当するコードが見つかりません');
+                return;
+            }
+            
+            // 確認画面に情報を表示
+            document.getElementById('confirm-code').textContent = currentCode;
+            document.getElementById('confirm-name').textContent = member.name;
+            document.getElementById('confirm-time').textContent = new Date().toLocaleString('ja-JP');
+            
+            showScreen('confirm-screen');
+        }
+        
+        // 記録を送信
+        function submitRecord() {
+            const now = new Date();
+            const record = {
+                date: now.toISOString().split('T')[0], // YYYY-MM-DD形式
+                time: now.toLocaleString('ja-JP'),
+                code: currentCode,
+                name: document.getElementById('confirm-name').textContent,
+                timestamp: now.getTime()
+            };
+            
+            visitRecords.push(record);
+            // メモリ内のデータをローカルストレージに保存しようと試みる（環境によっては動作しない）
+            try {
+                localStorage.setItem('visitRecords', JSON.stringify(visitRecords));
+            } catch (e) {
+                console.log('ローカルストレージは使用できません（メモリ内で管理）');
+            }
+            
+            console.log('記録追加:', record); // デバッグ用
+            console.log('全記録:', visitRecords); // デバッグ用
+            
+            // 成功メッセージを表示
+            const messageDiv = document.getElementById('confirm-message');
+            messageDiv.innerHTML = '<div class="success">記録が保存されました</div>';
+            
+            setTimeout(() => {
+                currentCode = '';
+                updateDisplay();
+                showScreen('main-screen');
+                messageDiv.innerHTML = '';
+            }, 2000);
+        }
+        
+        // 画面を切り替え
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+        
+        // メイン画面に戻る
+        function goBack() {
+            showScreen('main-screen');
+        }
+        
+        function goToMain() {
+            showScreen('main-screen');
+        }
+        
+        // 管理画面を表示
+        function showManagement() {
+            showScreen('management-screen');
+            // 今日の日付をデフォルトに設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('search-date').value = today;
+        }
+        
+        // 日付で検索
+        function searchByDate() {
+            const searchDate = document.getElementById('search-date').value;
+            if (!searchDate) {
+                alert('日付を選択してください');
+                return;
+            }
+            
+            console.log('検索日付:', searchDate); // デバッグ用
+            console.log('全記録:', visitRecords); // デバッグ用
+            
+            // 検索日付をDate オブジェクトに変換して日本語形式に変換
+            const searchDateObj = new Date(searchDate + 'T00:00:00');
+            const searchDateJP = searchDateObj.toLocaleDateString('ja-JP');
+            
+            console.log('検索日付（日本語形式）:', searchDateJP); // デバッグ用
+            
+            const filteredRecords = visitRecords.filter(record => {
+                // time値から日付部分を抽出（例：「2025/6/5 14:30:25」から「2025/6/5」を抽出）
+                const recordDatePart = record.time.split(' ')[0];
+                console.log('記録時刻:', record.time, '記録日付部分:', recordDatePart, '検索日付:', searchDateJP, '一致:', recordDatePart === searchDateJP); // デバッグ用
+                return recordDatePart === searchDateJP;
+            });
+            
+            console.log('検索結果:', filteredRecords); // デバッグ用
+            displayVisitorList(filteredRecords, searchDate);
+        }
+        
+        // 全件表示
+        function showAllRecords() {
+            displayVisitorList(visitRecords, '全期間');
+        }
+        
+        // 来場者リストを表示
+        function displayVisitorList(records, dateLabel) {
+            const listContainer = document.getElementById('visitor-list');
+            const countContainer = document.getElementById('visitor-count');
+            
+            countContainer.textContent = `${dateLabel}: ${records.length}名`;
+            
+            if (records.length === 0) {
+                listContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">該当する記録がありません</div>';
+                return;
+            }
+            
+            // 時間順に並び替え（新しい順）
+            records.sort((a, b) => b.timestamp - a.timestamp);
+            
+            listContainer.innerHTML = records.map(record => `
+                <div class="visitor-item">
+                    <div>
+                        <strong>${record.name}</strong><br>
+                        <small>コード: ${record.code}</small>
+                    </div>
+                    <div class="visitor-time">${record.time}</div>
+                </div>
+            `).join('');
+        }
+        
+        // CSV出力
+        function exportCSV() {
+            if (visitRecords.length === 0) {
+                alert('出力するデータがありません');
+                return;
+            }
+            
+            const csvContent = 'Date,Time,Code,Name\n' + 
+                visitRecords.map(record => 
+                    `${record.date},${record.time},${record.code},"${record.name}"`
+                ).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `visitor_records_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            alert('CSVファイルがダウンロードされました');
+        }
+        
+        // 全記録を削除
+        function clearAllRecords() {
+            if (visitRecords.length === 0) {
+                alert('削除する記録がありません');
+                return;
+            }
+            
+            const confirmMessage = `全ての記録を削除しますか？\n\n現在の記録数: ${visitRecords.length}件\n\nこの操作は取り消すことができません。`;
+            
+            if (confirm(confirmMessage)) {
+                // 二重確認
+                if (confirm('本当に全ての記録を削除してもよろしいですか？')) {
+                    visitRecords = [];
+                    localStorage.removeItem('visitRecords');
+                    
+                    // 表示をクリア
+                    document.getElementById('visitor-list').innerHTML = 
+                        '<div style="text-align: center; padding: 20px; color: #666;">記録が削除されました</div>';
+                    document.getElementById('visitor-count').textContent = '記録数: 0件';
+                    
+                    alert('全ての記録が削除されました');
+                } else {
+                    alert('削除がキャンセルされました');
+                }
+            } else {
+                alert('削除がキャンセルされました');
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            loadMemberData();
+            
+            // ローカルストレージからデータを読み込み（環境によっては動作しない）
+            try {
+                const storedRecords = localStorage.getItem('visitRecords');
+                if (storedRecords) {
+                    visitRecords = JSON.parse(storedRecords);
+                    console.log('保存された記録を読み込みました:', visitRecords.length + '件');
+                }
+            } catch (e) {
+                console.log('ローカルストレージは使用できません');
+                visitRecords = [];
+            }
+        });
+    </script>
+</body>
+</html>

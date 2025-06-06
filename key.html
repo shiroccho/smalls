@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鍵貸出管理アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .app-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .app-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .current-time {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .main-screen {
+            display: block;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #fd79a8, #e84393);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #00b894, #00cec9);
+        }
+
+        .btn-large {
+            font-size: 1.3rem;
+            padding: 20px 40px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .keypad button {
+            aspect-ratio: 1;
+            font-size: 1.5rem;
+            border-radius: 15px;
+        }
+
+        .input-display {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 15px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .rental-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .rental-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .rental-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .rental-item h4 {
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+        }
+
+        .rental-item p {
+            margin: 4px 0;
+            opacity: 0.9;
+        }
+
+        .confirmation-details {
+            background: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .confirmation-details h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .confirmation-details p {
+            margin: 10px 0;
+            font-size: 1.1rem;
+            padding: 8px 0;
+            border-bottom: 1px solid #c8e6c9;
+        }
+
+        .confirmation-details p:last-child {
+            border-bottom: none;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .button-row button {
+            flex: 1;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-rental {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-return {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .management-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .app-header h1 {
+                font-size: 2rem;
+            }
+            
+            .button-row {
+                flex-direction: column;
+            }
+            
+            .data-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1>🔑 鍵貸出管理システム</h1>
+        </div>
+
+        <div class="current-time" id="currentTime"></div>
+
+        <div id="mainScreen" class="main-screen">
+            <div class="card">
+                <button class="btn btn-large" onclick="showRentalInput()">🔑 貸出</button>
+                <button class="btn btn-secondary btn-large" onclick="showManagement()">⚙️ 管理</button>
+            </div>
+
+            <div class="card">
+                <h3>📋 貸出中の鍵</h3>
+                <div id="rentalList" class="rental-list"></div>
+            </div>
+        </div>
+
+        <div id="rentalInputScreen" class="hidden">
+            <div class="card">
+                <h3>🔑 鍵の貸出</h3>
+                <div>
+                    <h4>鍵番号</h4>
+                    <div class="input-display" id="keyNumberDisplay">鍵番号を入力してください</div>
+                    <div class="keypad">
+                        <button class="btn" onclick="inputNumber('key', '1')">1</button>
+                        <button class="btn" onclick="inputNumber('key', '2')">2</button>
+                        <button class="btn" onclick="inputNumber('key', '3')">3</button>
+                        <button class="btn" onclick="inputNumber('key', '4')">4</button>
+                        <button class="btn" onclick="inputNumber('key', '5')">5</button>
+                        <button class="btn" onclick="inputNumber('key', '6')">6</button>
+                        <button class="btn" onclick="inputNumber('key', '7')">7</button>
+                        <button class="btn" onclick="inputNumber('key', '8')">8</button>
+                        <button class="btn" onclick="inputNumber('key', '9')">9</button>
+                        <button class="btn" onclick="inputNumber('key', '0')">0</button> </div>
+                    <button class="btn btn-danger" onclick="clearInput('key')">クリア</button>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h4>社員コード</h4>
+                    <div class="input-display" id="employeeCodeDisplay">社員コードを入力してください</div>
+                    <div class="keypad">
+                        <button class="btn" onclick="inputNumber('employee', '1')">1</button>
+                        <button class="btn" onclick="inputNumber('employee', '2')">2</button>
+                        <button class="btn" onclick="inputNumber('employee', '3')">3</button>
+                        <button class="btn" onclick="inputNumber('employee', '4')">4</button>
+                        <button class="btn" onclick="inputNumber('employee', '5')">5</button>
+                        <button class="btn" onclick="inputNumber('employee', '6')">6</button>
+                        <button class="btn" onclick="inputNumber('employee', '7')">7</button>
+                        <button class="btn" onclick="inputNumber('employee', '8')">8</button>
+                        <button class="btn" onclick="inputNumber('employee', '9')">9</button>
+                        <button class="btn" onclick="inputNumber('employee', '0')">0</button>
+                    </div>
+                    <button class="btn btn-danger" onclick="clearInput('employee')">クリア</button>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="showMainScreen()">戻る</button>
+                    <button class="btn btn-success" onclick="confirmRental()">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="rentalConfirmScreen" class="hidden">
+            <div class="card">
+                <h3>🔑 貸出確認</h3>
+                <div class="confirmation-details" id="rentalConfirmDetails"></div>
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="showRentalInput()">戻る</button>
+                    <button class="btn btn-success" onclick="executeRental()">送信</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="returnInputScreen" class="hidden">
+            <div class="card">
+                <h3>🔄 鍵の返却</h3>
+                <div class="confirmation-details">
+                    <h4>返却する鍵</h4>
+                    <p id="returnKeyInfo"></p>
+                </div>
+                
+                <div>
+                    <h4>社員コード</h4>
+                    <div class="input-display" id="returnEmployeeCodeDisplay">社員コードを入力してください</div>
+                    <div class="keypad">
+                        <button class="btn" onclick="inputNumber('return', '1')">1</button>
+                        <button class="btn" onclick="inputNumber('return', '2')">2</button>
+                        <button class="btn" onclick="inputNumber('return', '3')">3</button>
+                        <button class="btn" onclick="inputNumber('return', '4')">4</button>
+                        <button class="btn" onclick="inputNumber('return', '5')">5</button>
+                        <button class="btn" onclick="inputNumber('return', '6')">6</button>
+                        <button class="btn" onclick="inputNumber('return', '7')">7</button>
+                        <button class="btn" onclick="inputNumber('return', '8')">8</button>
+                        <button class="btn" onclick="inputNumber('return', '9')">9</button>
+                        <button class="btn" onclick="inputNumber('return', '0')">0</button>
+                    </div>
+                    <button class="btn btn-danger" onclick="clearInput('return')">クリア</button>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="showMainScreen()">戻る</button>
+                    <button class="btn btn-success" onclick="confirmReturn()">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="returnConfirmScreen" class="hidden">
+            <div class="card">
+                <h3>🔄 返却確認</h3>
+                <div class="confirmation-details" id="returnConfirmDetails"></div>
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="showReturnInput()">戻る</button>
+                    <button class="btn btn-success" onclick="executeReturn()">送信</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="managementScreen" class="hidden">
+            <div class="card">
+                <h3>⚙️ 管理画面</h3>
+                <div class="management-grid">
+                    <button class="btn btn-secondary" onclick="loadMemberData()">👥 社員データ読込</button>
+                    <button class="btn btn-secondary" onclick="showDataList()">📊 データ一覧</button>
+                    <button class="btn btn-secondary" onclick="exportData()">💾 データ出力</button>
+                    <button class="btn btn-danger" onclick="deleteAllData()">🗑️ データ全削除</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn" onclick="showMainScreen()">メイン画面に戻る</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="dataListScreen" class="hidden">
+            <div class="card">
+                <h3>📊 データ一覧</h3>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>日時</th>
+                                <th>種別</th>
+                                <th>鍵番号</th>
+                                <th>社員コード</th>
+                                <th>社員名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-secondary" onclick="showManagement()">管理画面に戻る</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentKeyNumber = '';
+        let currentEmployeeCode = '';
+        let currentReturnEmployeeCode = '';
+        let currentReturnKey = null;
+        let memberData = new Map();
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            loadMemberDataFromStorage();
+            updateRentalList();
+        });
+
+        // 現在時刻の更新
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = `現在時刻: ${timeString}`;
+        }
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            const screens = ['mainScreen', 'rentalInputScreen', 'rentalConfirmScreen', 'returnInputScreen', 'returnConfirmScreen', 'managementScreen', 'dataListScreen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function showMainScreen() {
+            clearInputs();
+            showScreen('mainScreen');
+            updateRentalList();
+        }
+
+        function showRentalInput() {
+            clearInputs();
+            showScreen('rentalInputScreen');
+        }
+
+        function showReturnInput() {
+            clearInput('return');
+            showScreen('returnInputScreen');
+        }
+
+        function showManagement() {
+            showScreen('managementScreen');
+        }
+
+        function showDataList() {
+            showScreen('dataListScreen');
+            displayDataList();
+        }
+
+        // 入力処理
+        function inputNumber(type, number) {
+            if (type === 'key') {
+                currentKeyNumber += number;
+                document.getElementById('keyNumberDisplay').textContent = currentKeyNumber || '鍵番号を入力してください';
+            } else if (type === 'employee') {
+                currentEmployeeCode += number;
+                document.getElementById('employeeCodeDisplay').textContent = currentEmployeeCode || '社員コードを入力してください';
+            } else if (type === 'return') {
+                currentReturnEmployeeCode += number;
+                document.getElementById('returnEmployeeCodeDisplay').textContent = currentReturnEmployeeCode || '社員コードを入力してください';
+            }
+        }
+
+        function clearInput(type) {
+            if (type === 'key') {
+                currentKeyNumber = '';
+                document.getElementById('keyNumberDisplay').textContent = '鍵番号を入力してください';
+            } else if (type === 'employee') {
+                currentEmployeeCode = '';
+                document.getElementById('employeeCodeDisplay').textContent = '社員コードを入力してください';
+            } else if (type === 'return') {
+                currentReturnEmployeeCode = '';
+                document.getElementById('returnEmployeeCodeDisplay').textContent = '社員コードを入力してください';
+            }
+        }
+
+        function clearInputs() {
+            currentKeyNumber = '';
+            currentEmployeeCode = '';
+            currentReturnEmployeeCode = '';
+            currentReturnKey = null;
+            
+            const keyDisplay = document.getElementById('keyNumberDisplay');
+            const empDisplay = document.getElementById('employeeCodeDisplay');
+            const retDisplay = document.getElementById('returnEmployeeCodeDisplay');
+            
+            if (keyDisplay) keyDisplay.textContent = '鍵番号を入力してください';
+            if (empDisplay) empDisplay.textContent = '社員コードを入力してください';
+            if (retDisplay) retDisplay.textContent = '社員コードを入力してください';
+        }
+
+        // 貸出処理
+        function confirmRental() {
+            if (!currentKeyNumber || !currentEmployeeCode) {
+                showAlert('鍵番号と社員コードを入力してください', 'error');
+                return;
+            }
+
+            // 既に貸出中かチェック
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            const isRented = rentals.some(rental => 
+                rental.keyNumber === currentKeyNumber && rental.status === 'rental'
+            );
+
+            if (isRented) {
+                showAlert('この鍵は既に貸出中です', 'error');
+                return;
+            }
+
+            const employeeName = getEmployeeName(currentEmployeeCode);
+            const now = new Date().toLocaleString('ja-JP');
+
+            const confirmDetails = `
+                <h3>貸出内容確認</h3>
+                <p><strong>日時:</strong> ${now}</p>
+                <p><strong>鍵番号:</strong> ${currentKeyNumber}</p>
+                <p><strong>社員コード:</strong> ${currentEmployeeCode}</p>
+                <p><strong>社員名:</strong> ${employeeName}</p>
+            `;
+
+            document.getElementById('rentalConfirmDetails').innerHTML = confirmDetails;
+            showScreen('rentalConfirmScreen');
+        }
+
+        function executeRental() {
+            const now = new Date().toLocaleString('ja-JP');
+            const employeeName = getEmployeeName(currentEmployeeCode);
+
+            const rentalData = {
+                id: Date.now(),
+                datetime: now,
+                type: '貸出',
+                keyNumber: currentKeyNumber,
+                employeeCode: currentEmployeeCode,
+                employeeName: employeeName,
+                status: 'rental'
+            };
+
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            rentals.push(rentalData);
+            localStorage.setItem('keyRentals', JSON.stringify(rentals));
+
+            showAlert('貸出を完了しました', 'success');
+            showMainScreen();
+        }
+
+        // 返却処理
+        function selectKeyForReturn(keyNumber, employeeCode, employeeName) {
+            currentReturnKey = { keyNumber, employeeCode, employeeName };
+            document.getElementById('returnKeyInfo').textContent = 
+                `鍵番号: ${keyNumber} (貸出者: ${employeeName})`;
+            showReturnInput();
+        }
+
+        function confirmReturn() {
+            if (!currentReturnEmployeeCode || !currentReturnKey) {
+                showAlert('社員コードを入力してください', 'error');
+                return;
+            }
+
+            const employeeName = getEmployeeName(currentReturnEmployeeCode);
+            const now = new Date().toLocaleString('ja-JP');
+
+            const confirmDetails = `
+                <h3>返却内容確認</h3>
+                <p><strong>日時:</strong> ${now}</p>
+                <p><strong>鍵番号:</strong> ${currentReturnKey.keyNumber}</p>
+                <p><strong>社員コード:</strong> ${currentReturnEmployeeCode}</p>
+                <p><strong>社員名:</strong> ${employeeName}</p>
+            `;
+
+            document.getElementById('returnConfirmDetails').innerHTML = confirmDetails;
+            showScreen('returnConfirmScreen');
+        }
+
+        function executeReturn() {
+            const now = new Date().toLocaleString('ja-JP');
+            const employeeName = getEmployeeName(currentReturnEmployeeCode);
+
+            const returnData = {
+                id: Date.now(),
+                datetime: now,
+                type: '返却',
+                keyNumber: currentReturnKey.keyNumber,
+                employeeCode: currentReturnEmployeeCode,
+                employeeName: employeeName,
+                status: 'return'
+            };
+
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            rentals.push(returnData);
+            localStorage.setItem('keyRentals', JSON.stringify(rentals));
+
+            showAlert('返却を完了しました', 'success');
+            showMainScreen();
+        }
+
+        // 貸出中リスト更新
+        function updateRentalList() {
+            const rentalListElement = document.getElementById('rentalList');
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            
+            // 現在貸出中の鍵を取得
+            const currentRentals = getCurrentRentals(rentals);
+
+            if (currentRentals.length === 0) {
+                rentalListElement.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">貸出中の鍵はありません</p>';
+                return;
+            }
+
+            rentalListElement.innerHTML = currentRentals.map(rental => `
+                <div class="rental-item" onclick="selectKeyForReturn('${rental.keyNumber}', '${rental.employeeCode}', '${rental.employeeName}')">
+                    <h4>🔑 鍵番号: ${rental.keyNumber}</h4>
+                    <p>👤 ${rental.employeeName} (${rental.employeeCode})</p>
+                    <p>📅 ${rental.datetime}</p>
+                </div>
+            `).join('');
+        }
+
+        // 現在貸出中の鍵を取得
+        function getCurrentRentals(allRentals) {
+            const keyStatus = new Map();
+            
+            // 時系列順にソート
+            allRentals.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+            
+            // 各鍵の最新状態を記録
+            allRentals.forEach(rental => {
+                keyStatus.set(rental.keyNumber, rental);
+            });
+            
+            // 貸出中のもののみ返す
+            return Array.from(keyStatus.values()).filter(rental => rental.status === 'rental');
+        }
+
+        // 社員データ管理
+        function getEmployeeName(employeeCode) {
+            return memberData.get(employeeCode) || '不明';
+        }
+
+        function loadMemberDataFromStorage() {
+            const stored = localStorage.getItem('memberData');
+            if (stored) {
+                memberData = new Map(JSON.parse(stored));
+            }
+        }
+
+        function saveMemberDataToStorage() {
+            localStorage.setItem('memberData', JSON.stringify([...memberData]));
+        }
+
+        async function loadMemberData() {
+            try {
+                const response = await fetch('member.csv');
+                const csvText = await response.text();
+                
+                const lines = csvText.split('\n');
+                memberData.clear();
+                
+                lines.forEach(line => {
+                    const [name, code] = line.split(',').map(item => item.trim());
+                    if (name && code) {
+                        memberData.set(code, name);
+                    }
+                });
+                
+                saveMemberDataToStorage();
+                showAlert('社員データを読み込みました', 'success');
+            } catch (error) {
+                showAlert('社員データの読み込みに失敗しました', 'error');
+            }
+        }
+
+        // データ管理
+        function displayDataList() {
+            const tableBody = document.getElementById('dataTableBody');
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            
+            // 時系列逆順でソート（新しいものが上）
+            rentals.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+            tableBody.innerHTML = rentals.map(rental => `
+                <tr>
+                    <td>${rental.datetime}</td>
+                    <td><span class="status-badge ${rental.type === '貸出' ? 'status-rental' : 'status-return'}">${rental.type}</span></td>
+                    <td>${rental.keyNumber}</td>
+                    <td>${rental.employeeCode}</td>
+                    <td>${rental.employeeName}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportData() {
+            const rentals = JSON.parse(localStorage.getItem('keyRentals') || '[]');
+            
+            if (rentals.length === 0) {
+                showAlert('エクスポートするデータがありません', 'error');
+                return;
+            }
+
+            const csvContent = [
+                '日時,種別,鍵番号,社員コード,社員名',
+                ...rentals.map(rental => 
+                    `${rental.datetime},${rental.type},${rental.keyNumber},${rental.employeeCode},${rental.employeeName}`
+                )
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `key_rental_data_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showAlert('データをエクスポートしました', 'success');
+        }
+
+        function deleteAllData() {
+            if (confirm('すべてのデータを削除しますか？この操作は取り消せません。')) {
+                localStorage.removeItem('keyRentals');
+                showAlert('すべてのデータを削除しました', 'success');
+                updateRentalList();
+            }
+        }
+
+        // アラート表示
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
