@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セキュリティカメラ画像ビューア</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #cameraImage {
+            max-width: 90%;
+            max-height: 90vh;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+        }
+        .container {
+            text-align: center;
+        }
+        .message {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>セキュリティカメラ画像</h1>
+        <img id="cameraImage" src="" alt="カメラ画像" onerror="this.onerror=null; this.src='placeholder.png'; alert('画像の読み込みに失敗しました。URLまたは認証情報をご確認ください。');">
+        <p class="message">最終更新: <span id="lastUpdated">--:--:--</span></p>
+    </div>
+
+    <script>
+        // ここにカメラのURLを設定してください
+        const CAMERA_URL = "http://<ID>:<パスワード>@<IPアドレス>/tmpfs/auto.jpg"; 
+        const UPDATE_INTERVAL_MS = 30 * 1000; // 30秒
+
+        const cameraImage = document.getElementById('cameraImage');
+        const lastUpdated = document.getElementById('lastUpdated');
+
+        function updateImage() {
+            // キャッシュを防ぐために、URLにタイムスタンプを追加
+           const imageUrlWithTimestamp = CAMERA_URL + '?' + new Date().getTime();
+//            const imageUrlWithTimestamp = CAMERA_URL;
+            cameraImage.src = imageUrlWithTimestamp;
+            
+            const now = new Date();
+            lastUpdated.textContent = now.toLocaleTimeString();
+        }
+
+        // 最初の画像をすぐに読み込む
+        updateImage();
+
+        // 30秒ごとに画像を更新
+        setInterval(updateImage, UPDATE_INTERVAL_MS);
+    </script>
+</body>
+</html>
