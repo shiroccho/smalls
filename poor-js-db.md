@@ -280,16 +280,8 @@ console.log('Table data:', dataTable.data());
 - [ ] **多言語対応**: 英語・中国語サポート
 - [ ] **API連携**: 外部データソースとの連携
 
-## 📞 サポート
-
-質問や問題がある場合は、以下の方法でお気軽にご連絡ください：
-
-- **Issue**: GitHubのIssueページで報告
-- **Discussion**: 機能提案や質問はDiscussionページで
-- **Email**: support@example.com
 
 ---
 
-**作成者**: Claude (Anthropic)  
 **最終更新**: 2025年7月  
 **バージョン**: 1.0.0
