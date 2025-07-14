@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドキュメント全文検索</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-container {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .search-input {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 12px 20px 12px 50px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .keyword-filter {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 12px 20px 12px 50px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+        
+        .keyword-filter:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .keyword-filter-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 18px;
+        }
+        
+        .table-container {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            padding: 15px;
+        }
+        
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table td {
+            padding: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            vertical-align: middle;
+        }
+        
+        .document-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .document-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .keyword-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .keyword-tag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .description {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        .stats {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+        
+        .stats h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .stats-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        /* DataTables カスタマイズ */
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 20px;
+            border: 2px solid #e9ecef;
+            padding: 8px 15px;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 20px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #667eea;
+            color: white !important;
+            border-color: #667eea;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #667eea !important;
+            color: white !important;
+            border-color: #667eea !important;
+        }
+        
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .search-input,
+            .keyword-filter {
+                padding: 10px 15px 10px 40px;
+            }
+            
+            .table td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .search-container .col-md-8,
+            .search-container .col-md-4 {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-search"></i> ドキュメント全文検索システム</h1>
+        
+        <div class="stats">
+            <h4>統計情報</h4>
+            <div class="stats-number" id="totalDocuments">0</div>
+            <div>総ドキュメント数</div>
+        </div>
+        
+        <div class="search-container">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="position-relative">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            class="form-control search-input" 
+                            id="globalSearch"
+                            placeholder="ドキュメント名、解説、キーワードから検索..."
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="position-relative">
+                        <i class="fas fa-tags keyword-filter-icon"></i>
+                        <select 
+                            class="form-select keyword-filter" 
+                            id="keywordFilter"
+                        >
+                            <option value="">すべてのキーワード</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table id="documentsTable" class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ドキュメント名</th>
+                        <th>解説</th>
+                        <th>キーワード</th>
+                        <th>リンク</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- データはJavaScriptで動的に生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- DataTables JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // サンプルデータ配列
+        const documentsData = [
+            {
+                name: "JavaScript 完全ガイド",
+                link: "https://developer.mozilla.org/ja/docs/Web/JavaScript",
+                description: "JavaScript の基本から応用まで、Web開発で必要な知識を網羅的に解説しています。ES6以降の新機能も含む最新の情報を提供。",
+                keywords: ["JavaScript", "Web開発", "ES6", "プログラミング", "フロントエンド"]
+            },
+            {
+                name: "React 入門チュートリアル",
+                link: "https://ja.reactjs.org/tutorial/tutorial.html",
+                description: "Reactの基本概念であるコンポーネント、state、propsについて学べます。実際にTodo アプリを作成しながら理解を深めます。",
+                keywords: ["React", "コンポーネント", "state", "props", "SPA"]
+            },
+            {
+                name: "CSS Grid レイアウトマスター",
+                link: "https://developer.mozilla.org/ja/docs/Web/CSS/CSS_Grid_Layout",
+                description: "現代的なWebレイアウトの要であるCSS Gridについて詳しく解説。実践的な例を通じてレスポンシブデザインの実装方法を学習。",
+                keywords: ["CSS", "Grid", "レイアウト", "レスポンシブ", "デザイン"]
+            },
+            {
+                name: "Node.js サーバーサイド開発",
+                link: "https://nodejs.org/ja/docs/",
+                description: "Node.jsを使用したサーバーサイド開発の基礎から実践まで。Express.jsフレームワークを使った API 開発についても詳しく解説。",
+                keywords: ["Node.js", "サーバーサイド", "Express", "API", "バックエンド"]
+            },
+            {
+                name: "Vue.js プロジェクト構築",
+                link: "https://ja.vuejs.org/v2/guide/",
+                description: "Vue.jsの基本的な使い方から、Vue CLI を使った本格的な SPA 開発まで段階的に学習できます。",
+                keywords: ["Vue.js", "SPA", "Vue CLI", "コンポーネント", "フロントエンド"]
+            },
+            {
+                name: "TypeScript 型安全プログラミング",
+                link: "https://www.typescriptlang.org/docs/",
+                description: "TypeScriptの型システムを活用した安全で保守性の高いコードの書き方を学習。大規模プロジェクトでの実践方法も解説。",
+                keywords: ["TypeScript", "型安全", "大規模開発", "静的型付け", "JavaScript"]
+            },
+            {
+                name: "PWA 開発ガイド",
+                link: "https://developers.google.com/web/progressive-web-apps",
+                description: "Progressive Web Apps の作成方法を詳しく解説。Service Worker、Web App Manifest、プッシュ通知の実装方法を学習。",
+                keywords: ["PWA", "Service Worker", "オフライン", "プッシュ通知", "モバイル"]
+            },
+            {
+                name: "Webpack モジュールバンドラー",
+                link: "https://webpack.js.org/concepts/",
+                description: "モダンなフロントエンド開発に欠かせないWebpackの設定方法と最適化テクニック。Hot Module Replacementの活用法も紹介。",
+                keywords: ["Webpack", "モジュールバンドラー", "ビルドツール", "最適化", "HMR"]
+            },
+            {
+                name: "Git バージョン管理入門",
+                link: "https://git-scm.com/book/ja/v2",
+                description: "Gitの基本的な操作からブランチ戦略、チーム開発でのワークフローまで。実際のプロジェクトで使える実践的なテクニック。",
+                keywords: ["Git", "バージョン管理", "ブランチ", "チーム開発", "GitHub"]
+            },
+            {
+                name: "Docker コンテナ技術",
+                link: "https://docs.docker.com/get-started/",
+                description: "Dockerを使用したコンテナ化の基礎から、マイクロサービス アーキテクチャでの活用方法まで詳しく解説。",
+                keywords: ["Docker", "コンテナ", "マイクロサービス", "DevOps", "仮想化"]
+            }
+        ];
+
+        let dataTable;
+
+        $(document).ready(function() {
+            // 統計情報の更新
+            updateStats();
+            
+            // キーワードフィルタの初期化
+            initializeKeywordFilter();
+            
+            // DataTablesの初期化
+            initializeDataTable();
+            
+            // 独自検索機能の実装
+            setupCustomSearch();
+        });
+
+        function updateStats() {
+            $('#totalDocuments').text(documentsData.length);
+        }
+
+        function initializeKeywordFilter() {
+            // すべてのキーワードを収集
+            const allKeywords = new Set();
+            documentsData.forEach(doc => {
+                doc.keywords.forEach(keyword => {
+                    allKeywords.add(keyword);
+                });
+            });
+            
+            // キーワードをアルファベット順にソート
+            const sortedKeywords = Array.from(allKeywords).sort();
+            
+            // プルダウンにオプションを追加
+            const keywordFilter = $('#keywordFilter');
+            sortedKeywords.forEach(keyword => {
+                keywordFilter.append(`<option value="${keyword}">${keyword}</option>`);
+            });
+        }
+
+        function initializeDataTable() {
+            dataTable = $('#documentsTable').DataTable({
+                data: documentsData,
+                columns: [
+                    { 
+                        data: 'name',
+                        render: function(data, type, row) {
+                            return `<strong>${data}</strong>`;
+                        }
+                    },
+                    { 
+                        data: 'description',
+                        render: function(data, type, row) {
+                            return `<span class="description">${data}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'keywords',
+                        render: function(data, type, row) {
+                            return data.map(keyword => 
+                                `<span class="keyword-tag">${keyword}</span>`
+                            ).join('');
+                        }
+                    },
+                    { 
+                        data: 'link',
+                        render: function(data, type, row) {
+                            return `<a href="${data}" class="document-link" target="_blank" rel="noopener noreferrer">
+                                        <i class="fas fa-external-link-alt"></i> 開く
+                                    </a>`;
+                        }
+                    }
+                ],
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Japanese.json"
+                },
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "全て"]],
+                responsive: true,
+                searching: true,
+                ordering: true,
+                info: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                drawCallback: function(settings) {
+                    // ページネーションなどのUI要素にアニメーション効果を追加
+                    $('.paginate_button').hover(function() {
+                        $(this).addClass('animate__animated animate__pulse');
+                    }, function() {
+                        $(this).removeClass('animate__animated animate__pulse');
+                    });
+                }
+            });
+        }
+
+        function setupCustomSearch() {
+            // 独自の検索入力フィールドでDataTablesを制御
+            $('#globalSearch').on('keyup', function() {
+                applyFilters();
+            });
+
+            // リアルタイム検索のためのイベントリスナー
+            $('#globalSearch').on('input', function() {
+                applyFilters();
+            });
+            
+            // キーワードフィルタの変更時
+            $('#keywordFilter').on('change', function() {
+                applyFilters();
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = $('#globalSearch').val();
+            const selectedKeyword = $('#keywordFilter').val();
+            
+            // DataTablesのカスタム検索関数を設定
+            $.fn.dataTable.ext.search.length = 0; // 既存の検索関数をクリア
+            
+            if (selectedKeyword) {
+                // キーワードフィルタが選択されている場合
+                $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                    const rowData = documentsData[dataIndex];
+                    return rowData.keywords.includes(selectedKeyword);
+                });
+            }
+            
+            // テキスト検索を適用
+            dataTable.search(searchTerm).draw();
+            
+            // 検索結果のハイライト効果
+            if (searchTerm.length > 0 || selectedKeyword) {
+                highlightSearchResults(searchTerm);
+            }
+        }
+
+        function highlightSearchResults(searchTerm) {
+            // 検索結果のハイライト（簡単な実装）
+            setTimeout(() => {
+                const visibleRows = $('#documentsTable tbody tr:visible');
+                visibleRows.addClass('animate__animated animate__fadeIn');
+                
+                setTimeout(() => {
+                    visibleRows.removeClass('animate__animated animate__fadeIn');
+                }, 500);
+            }, 100);
+        }
+
+        // 検索入力フィールドとキーワードフィルタのフォーカス時の効果
+        $('#globalSearch, #keywordFilter').focus(function() {
+            $(this).parent().addClass('focused');
+        }).blur(function() {
+            $(this).parent().removeClass('focused');
+        });
+
+        // キーボードショートカット（Ctrl+K で検索フィールドにフォーカス）
+        $(document).keydown(function(e) {
+            if (e.ctrlKey && e.keyCode === 75) { // Ctrl+K
+                e.preventDefault();
+                $('#globalSearch').focus();
+            }
+            if (e.ctrlKey && e.keyCode === 74) { // Ctrl+J でキーワードフィルタにフォーカス
+                e.preventDefault();
+                $('#keywordFilter').focus();
+            }
+        });
+
+        // テーブル行のクリック時の効果
+        $('#documentsTable tbody').on('click', 'tr', function() {
+            $(this).addClass('animate__animated animate__pulse');
+            setTimeout(() => {
+                $(this).removeClass('animate__animated animate__pulse');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
