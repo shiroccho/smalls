@@ -22,3 +22,5 @@
 - key.html : キーボックス（鍵がいっぱい入ってるボックス）の貸出管理アプリ
 - raijou.html : イベント / 行事 の来場者確認アプリ
 - member.csv : key.html raijou.html のテストデータ
+- colorpicker.html : カラーピッカーアプリ（近似色などセットで表示）
+- colorpicker.md : 上記の説明
