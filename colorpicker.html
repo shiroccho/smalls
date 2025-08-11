@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webページ用カラーピッカーツール</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .color-display {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .controls {
+            display: grid;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .slider-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .slider-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 40px;
+        }
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .red-slider {
+            background: linear-gradient(to right, #000, #ff0000);
+        }
+        
+        .green-slider {
+            background: linear-gradient(to right, #000, #00ff00);
+        }
+        
+        .blue-slider {
+            background: linear-gradient(to right, #000, #0000ff);
+        }
+        
+        .brightness-slider {
+            background: linear-gradient(to right, #000, #fff);
+        }
+        
+        .value-display {
+            min-width: 50px;
+            text-align: right;
+            font-weight: bold;
+            color: #666;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .color-info {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .color-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .color-value {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .color-value-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .color-value-text {
+            font-family: 'Courier New', monospace;
+            background: #f0f0f0;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .color-value-text:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .color-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+        
+        .color-harmony {
+            margin-top: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .harmony-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .harmony-schemes {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .harmony-scheme {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .scheme-title {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .color-trio {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .color-sample {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .color-sample:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .color-sample.main {
+            border: 3px solid #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .color-codes {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+        }
+        
+        .color-code {
+            background: #f0f0f0;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .color-code:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .scheme-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .copy-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .copy-message.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Webページ用カラーピッカー</h1>
+        
+        <div class="color-display" id="colorDisplay"></div>
+        
+        <div class="controls">
+            <div class="slider-group">
+                <span class="slider-label">R</span>
+                <input type="range" id="redSlider" class="slider red-slider" min="0" max="255" value="255">
+                <span class="value-display" id="redValue">255</span>
+            </div>
+            
+            <div class="slider-group">
+                <span class="slider-label">G</span>
+                <input type="range" id="greenSlider" class="slider green-slider" min="0" max="255" value="0">
+                <span class="value-display" id="greenValue">0</span>
+            </div>
+            
+            <div class="slider-group">
+                <span class="slider-label">B</span>
+                <input type="range" id="blueSlider" class="slider blue-slider" min="0" max="255" value="0">
+                <span class="value-display" id="blueValue">0</span>
+            </div>
+            
+            <div class="slider-group">
+                <span class="slider-label">明度</span>
+                <input type="range" id="brightnessSlider" class="slider brightness-slider" min="0" max="100" value="100">
+                <span class="value-display" id="brightnessValue">100%</span>
+            </div>
+        </div>
+        
+        <div class="color-info">
+            <div class="color-values">
+                <div class="color-value">
+                    <div class="color-value-label">RGB</div>
+                    <div class="color-value-text" id="rgbValue" onclick="copyToClipboard(this)">rgb(255, 0, 0)</div>
+                </div>
+                <div class="color-value">
+                    <div class="color-value-label">HEX</div>
+                    <div class="color-value-text" id="hexValue" onclick="copyToClipboard(this)">#FF0000</div>
+                </div>
+                <div class="color-value">
+                    <div class="color-value-label">HSL</div>
+                    <div class="color-value-text" id="hslValue" onclick="copyToClipboard(this)">hsl(0, 100%, 50%)</div>
+                </div>
+                <div class="color-value">
+                    <div class="color-value-label">CSS Color</div>
+                    <div class="color-value-text" id="cssValue" onclick="copyToClipboard(this)">color: #FF0000;</div>
+                </div>
+            </div>
+            <div class="color-name" id="colorName">Red</div>
+        </div>
+        
+        <div class="color-harmony">
+            <div class="harmony-title">🎨 調和する3色配色</div>
+            <div class="harmony-schemes" id="harmonySchemes">
+                <!-- 動的に生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="copy-message" id="copyMessage">クリップボードにコピーしました！</div>
+
+    <script>
+        // 基本色の定義
+        const namedColors = {
+            'red': [255, 0, 0],
+            'green': [0, 128, 0],
+            'blue': [0, 0, 255],
+            'yellow': [255, 255, 0],
+            'cyan': [0, 255, 255],
+            'magenta': [255, 0, 255],
+            'orange': [255, 165, 0],
+            'purple': [128, 0, 128],
+            'pink': [255, 192, 203],
+            'brown': [165, 42, 42],
+            'gray': [128, 128, 128],
+            'black': [0, 0, 0],
+            'white': [255, 255, 255],
+            'lime': [0, 255, 0],
+            'navy': [0, 0, 128],
+            'maroon': [128, 0, 0],
+            'olive': [128, 128, 0],
+            'teal': [0, 128, 128],
+            'silver': [192, 192, 192],
+            'gold': [255, 215, 0],
+            'indigo': [75, 0, 130],
+            'violet': [238, 130, 238],
+            'turquoise': [64, 224, 208],
+            'coral': [255, 127, 80],
+            'salmon': [250, 128, 114]
+        };
+
+        // 要素の取得
+        const redSlider = document.getElementById('redSlider');
+        const greenSlider = document.getElementById('greenSlider');
+        const blueSlider = document.getElementById('blueSlider');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        
+        const redValue = document.getElementById('redValue');
+        const greenValue = document.getElementById('greenValue');
+        const blueValue = document.getElementById('blueValue');
+        const brightnessValue = document.getElementById('brightnessValue');
+        
+        const colorDisplay = document.getElementById('colorDisplay');
+        const rgbValue = document.getElementById('rgbValue');
+        const hexValue = document.getElementById('hexValue');
+        const hslValue = document.getElementById('hslValue');
+        const cssValue = document.getElementById('cssValue');
+        const colorName = document.getElementById('colorName');
+
+        // RGB値を明度で調整する関数
+        function adjustBrightness(r, g, b, brightness) {
+            const factor = brightness / 100;
+            return [
+                Math.round(r * factor),
+                Math.round(g * factor),
+                Math.round(b * factor)
+            ];
+        }
+
+        // RGBをHEXに変換
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        // RGBをHSLに変換
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            
+            return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+        }
+
+        // HSLをRGBに変換
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            s /= 100;
+            l /= 100;
+            
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            };
+            
+            if (s === 0) {
+                const gray = Math.round(l * 255);
+                return [gray, gray, gray];
+            } else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                const r = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+                const g = Math.round(hue2rgb(p, q, h) * 255);
+                const b = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+                return [r, g, b];
+            }
+        }
+
+        // 調和する色配色を生成
+        function generateHarmoniousColors(r, g, b) {
+            const [h, s, l] = rgbToHsl(r, g, b);
+            
+            const schemes = [
+                {
+                    name: "補色配色",
+                    description: "対照的で鮮やかな印象を与える配色",
+                    colors: [
+                        [r, g, b], // 元の色
+                        hslToRgb((h + 180) % 360, s, l), // 補色
+                        hslToRgb((h + 90) % 360, Math.max(20, s - 20), Math.max(30, l - 10)) // アクセント色
+                    ]
+                },
+                {
+                    name: "類似色配色",
+                    description: "統一感があり落ち着いた印象の配色",
+                    colors: [
+                        [r, g, b], // 元の色
+                        hslToRgb((h + 30) % 360, s, l), // 類似色1
+                        hslToRgb((h - 30 + 360) % 360, s, l) // 類似色2
+                    ]
+                },
+                {
+                    name: "三角配色",
+                    description: "バランスの取れた活気のある配色",
+                    colors: [
+                        [r, g, b], // 元の色
+                        hslToRgb((h + 120) % 360, s, l), // 120度回転
+                        hslToRgb((h + 240) % 360, s, l) // 240度回転
+                    ]
+                },
+                {
+                    name: "分離補色配色",
+                    description: "補色よりも柔らかく調和の取れた配色",
+                    colors: [
+                        [r, g, b], // 元の色
+                        hslToRgb((h + 150) % 360, s, l), // 150度回転
+                        hslToRgb((h + 210) % 360, s, l) // 210度回転
+                    ]
+                },
+                {
+                    name: "明度変化配色",
+                    description: "同じ色相で明度を変化させた統一感のある配色",
+                    colors: [
+                        [r, g, b], // 元の色
+                        hslToRgb(h, s, Math.min(95, l + 25)), // 明るい版
+                        hslToRgb(h, s, Math.max(15, l - 25)) // 暗い版
+                    ]
+                }
+            ];
+            
+            return schemes;
+        }
+
+        // 配色スキームを表示
+        function displayHarmonySchemes(r, g, b) {
+            const schemes = generateHarmoniousColors(r, g, b);
+            const schemesContainer = document.getElementById('harmonySchemes');
+            
+            schemesContainer.innerHTML = '';
+            
+            schemes.forEach((scheme, index) => {
+                const schemeDiv = document.createElement('div');
+                schemeDiv.className = 'harmony-scheme';
+                
+                const title = document.createElement('div');
+                title.className = 'scheme-title';
+                title.textContent = scheme.name;
+                
+                const description = document.createElement('div');
+                description.className = 'scheme-description';
+                description.textContent = scheme.description;
+                
+                const colorTrio = document.createElement('div');
+                colorTrio.className = 'color-trio';
+                
+                scheme.colors.forEach((color, colorIndex) => {
+                    const [cr, cg, cb] = color;
+                    const colorSample = document.createElement('div');
+                    colorSample.className = `color-sample${colorIndex === 0 ? ' main' : ''}`;
+                    colorSample.style.backgroundColor = `rgb(${cr}, ${cg}, ${cb})`;
+                    colorSample.title = `rgb(${cr}, ${cg}, ${cb})`;
+                    
+                    // 色をクリックして適用
+                    colorSample.onclick = () => applyColor(cr, cg, cb);
+                    
+                    const colorCodes = document.createElement('div');
+                    colorCodes.className = 'color-codes';
+                    
+                    const hex = rgbToHex(cr, cg, cb);
+                    const rgbCode = document.createElement('div');
+                    rgbCode.className = 'color-code';
+                    rgbCode.textContent = hex;
+                    rgbCode.onclick = (e) => {
+                        e.stopPropagation();
+                        copyToClipboard(rgbCode);
+                    };
+                    
+                    colorCodes.appendChild(rgbCode);
+                    
+                    const container = document.createElement('div');
+                    container.style.textAlign = 'center';
+                    container.appendChild(colorSample);
+                    container.appendChild(colorCodes);
+                    
+                    colorTrio.appendChild(container);
+                });
+                
+                schemeDiv.appendChild(title);
+                schemeDiv.appendChild(description);
+                schemeDiv.appendChild(colorTrio);
+                schemesContainer.appendChild(schemeDiv);
+            });
+        }
+
+        // 色を適用する関数
+        function applyColor(r, g, b) {
+            // 明度を考慮して逆算
+            const currentBrightness = parseInt(brightnessSlider.value);
+            const factor = 100 / currentBrightness;
+            
+            const baseR = Math.min(255, Math.round(r * factor));
+            const baseG = Math.min(255, Math.round(g * factor));
+            const baseB = Math.min(255, Math.round(b * factor));
+            
+            redSlider.value = baseR;
+            greenSlider.value = baseG;
+            blueSlider.value = baseB;
+            
+            updateColor();
+        }
+
+        // 色名を取得
+        function getColorName(r, g, b) {
+            let closestColor = '';
+            let minDistance = Infinity;
+            
+            for (const [name, [nr, ng, nb]] of Object.entries(namedColors)) {
+                const distance = Math.sqrt(Math.pow(r - nr, 2) + Math.pow(g - ng, 2) + Math.pow(b - nb, 2));
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestColor = name;
+                }
+            }
+            
+            return minDistance < 50 ? closestColor.charAt(0).toUpperCase() + closestColor.slice(1) : '';
+        }
+
+        // 色を更新
+        function updateColor() {
+            const baseR = parseInt(redSlider.value);
+            const baseG = parseInt(greenSlider.value);
+            const baseB = parseInt(blueSlider.value);
+            const brightness = parseInt(brightnessSlider.value);
+            
+            const [r, g, b] = adjustBrightness(baseR, baseG, baseB, brightness);
+            
+            // 値の表示を更新
+            redValue.textContent = baseR;
+            greenValue.textContent = baseG;
+            blueValue.textContent = baseB;
+            brightnessValue.textContent = brightness + '%';
+            
+            // 色表示を更新
+            const color = `rgb(${r}, ${g}, ${b})`;
+            colorDisplay.style.backgroundColor = color;
+            
+            // 各形式の色表記を更新
+            const hex = rgbToHex(r, g, b);
+            const [h, s, l] = rgbToHsl(r, g, b);
+            
+            rgbValue.textContent = `rgb(${r}, ${g}, ${b})`;
+            hexValue.textContent = hex;
+            hslValue.textContent = `hsl(${h}, ${s}%, ${l}%)`;
+            cssValue.textContent = `color: ${hex};`;
+            
+            // 色名を表示
+            const name = getColorName(r, g, b);
+            colorName.textContent = name || '近似色名なし';
+            colorName.style.display = name ? 'block' : 'block';
+            
+            // 調和する色配色を表示
+            displayHarmonySchemes(r, g, b);
+        }
+
+        // クリップボードにコピー
+        function copyToClipboard(element) {
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const copyMessage = document.getElementById('copyMessage');
+                copyMessage.classList.add('show');
+                setTimeout(() => {
+                    copyMessage.classList.remove('show');
+                }, 2000);
+            });
+        }
+
+        // イベントリスナーの追加
+        redSlider.addEventListener('input', updateColor);
+        greenSlider.addEventListener('input', updateColor);
+        blueSlider.addEventListener('input', updateColor);
+        brightnessSlider.addEventListener('input', updateColor);
+
+        // 初期化
+        updateColor();
+    </script>
+</body>
+</html>
